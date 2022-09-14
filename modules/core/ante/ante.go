@@ -12,7 +12,7 @@ type AnteDecorator struct {
 	k *keeper.Keeper
 }
 
-func NewAnteDecorator(k *keeper.Keeper) AnteDecorator {
+func NewRedundantRelayDecorator(k *keeper.Keeper) AnteDecorator {
 	return AnteDecorator{k: k}
 }
 
