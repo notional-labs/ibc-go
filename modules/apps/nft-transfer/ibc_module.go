@@ -74,6 +74,8 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
+
+	fmt.Println("----------------1 OnChanOpenInit");
 	if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
 		return "", err
 	}
@@ -91,7 +93,7 @@ func (im IBCModule) OnChanOpenInit(
 		return "", err
 	}
 
-	return "", nil
+	return types.Version, nil
 }
 
 // OnChanOpenTry implements the IBCModule interface.
@@ -105,6 +107,9 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
+
+	fmt.Println("----------------2 OnChanOpenTry");
+
 	if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
 		return "", err
 	}
@@ -124,7 +129,7 @@ func (im IBCModule) OnChanOpenTry(
 		}
 	}
 
-	return "", nil
+	return types.Version, nil
 }
 
 // OnChanOpenAck implements the IBCModule interface
