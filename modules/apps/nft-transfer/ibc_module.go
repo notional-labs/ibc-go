@@ -194,7 +194,10 @@ func (im IBCModule) OnRecvPacket(
 	// only attempt the application logic if the packet data
 	// was successfully decoded
 	if ack.Success() {
+		fmt.Println("----------------#2 ibc_module ")
 		if err := im.keeper.OnRecvPacket(ctx, packet, data); err != nil {
+
+			fmt.Printf("----------------#3 ibc_module %v+ \n",err)
 			ack = types.NewErrorAcknowledgement(err)
 		}
 	}
