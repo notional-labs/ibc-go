@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/armon/go-metrics"
@@ -127,6 +128,8 @@ func (k Keeper) SendTransfer(
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
+
+	fmt.Println("----------------#2.01 OnRecvPacket ")
 	// validate packet data upon receiving
 	if err := data.ValidateBasic(); err != nil {
 		return err
@@ -281,22 +284,30 @@ func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
+
+	fmt.Println("----------------#2.02 processReceivedPacket ")
 	receiver, err := sdk.AccAddressFromBech32(data.Receiver)
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("----------------#2.03 processReceivedPacket ")
 	if types.IsAwayFromOrigin(packet.GetSourcePort(), packet.GetSourceChannel(), data.ClassId) {
+
+		fmt.Println("----------------#2.04 processReceivedPacket ")
 		// since SendPacket did not prefix the classID, we must prefix classID here
 		classPrefix := types.GetClassPrefix(packet.GetDestPort(), packet.GetDestChannel())
 		// NOTE: sourcePrefix contains the trailing "/"
 		prefixedClassID := classPrefix + data.ClassId
 
+		fmt.Println("----------------#2.05 processReceivedPacket ")
 		// construct the class trace from the full raw classID
 		classTrace := types.ParseClassTrace(prefixedClassID)
 		if !k.HasClassTrace(ctx, classTrace.Hash()) {
 			k.SetClassTrace(ctx, classTrace)
 		}
 
+		fmt.Println("----------------#2.06 processReceivedPacket ")
 		voucherClassID := classTrace.IBCClassID()
 		if !k.nftKeeper.HasClass(ctx, voucherClassID) {
 			if err := k.nftKeeper.SaveClass(ctx, nft.Class{
@@ -307,6 +318,7 @@ func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packe
 			}
 		}
 
+		fmt.Println("----------------#2.07 processReceivedPacket ")
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeClassTrace,
@@ -315,6 +327,7 @@ func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packe
 			),
 		)
 
+		fmt.Println("----------------#2.08 processReceivedPacket ")
 		for i, tokenID := range data.TokenIds {
 			if err := k.nftKeeper.Mint(ctx, nft.NFT{
 				ClassId: voucherClassID,
@@ -330,16 +343,24 @@ func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packe
 	// If the token moves in the direction of back to origin,
 	// we need to unescrow the token and transfer it to the receiver
 
+	fmt.Println("----------------#2.09 processReceivedPacket ")
 	// we should remove the prefix. For example:
 	// p6/c6/p4/c4/p2/c2/nftClass -> p4/c4/p2/c2/nftClass
 	unprefixedClassID := types.RemoveClassPrefix(packet.GetSourcePort(),
 		packet.GetSourceChannel(), data.ClassId)
+
+	fmt.Println("----------------#2.10 processReceivedPacket ")
 	voucherClassID := types.ParseClassTrace(unprefixedClassID).IBCClassID()
 	for _, tokenID := range data.TokenIds {
+
+		fmt.Println("----------------#2.11 processReceivedPacket ")
 		if err := k.nftKeeper.Transfer(ctx,
 			voucherClassID, tokenID, receiver); err != nil {
 			return err
 		}
 	}
+
+
+	fmt.Println("----------------#2.12 processReceivedPacket ")
 	return nil
 }
