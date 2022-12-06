@@ -334,7 +334,9 @@ func (chain *TestChain) SendMsgs(msgs ...sdk.Msg) (*sdk.Result, error) {
 	}
 
 	// NextBlock calls app.Commit()
-	chain.NextBlock()
+	// chain.NextBlock()
+	chain.CurrentHeader.Height = chain.App.LastBlockHeight() + 1
+	chain.LastHeader = chain.CurrentTMClientHeader()
 
 	// increment sequence for successful transaction execution
 	err = chain.SenderAccount.SetSequence(chain.SenderAccount.GetSequence() + 1)
@@ -435,7 +437,6 @@ func (chain *TestChain) ConstructUpdateTMClientHeaderWithTrustedHeight(counterpa
 		return nil, err
 	}
 	header.TrustedValidators = trustedVals
-
 	return header, nil
 }
 
