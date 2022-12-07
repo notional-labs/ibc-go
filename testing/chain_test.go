@@ -16,7 +16,6 @@ func TestChangeValSet(t *testing.T) {
 	chainB := coord.GetChain(ibctesting.GetChainID(2))
 
 	path := ibctesting.NewPath(chainA, chainB)
-	coord.CommitBlock(chainA, chainB)
 	coord.Setup(path)
 
 	amount, ok := sdk.NewIntFromString("10000000000000000000")
