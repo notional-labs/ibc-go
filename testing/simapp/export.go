@@ -14,6 +14,7 @@ import (
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
+
 func (app *SimApp) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
