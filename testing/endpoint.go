@@ -130,8 +130,7 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 // UpdateClient updates the IBC client associated with the endpoint.
 func (endpoint *Endpoint) UpdateClient() (err error) {
 	// ensure counterparty has committed state
-	// endpoint.Chain.Coordinator.CommitBlock(endpoint.Chain)
-	// endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
+	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
 	var header exported.ClientMessage
 
