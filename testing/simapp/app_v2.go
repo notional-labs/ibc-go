@@ -434,7 +434,9 @@ func (app *SimApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 	}
 }
 
-func (app SimApp) RegisterUpgradeHandlers() {}
+func (app SimApp) RegisterUpgradeHandlers() {
+
+}
 
 // GetMaccPerms returns a copy of the module account permissions
 //
