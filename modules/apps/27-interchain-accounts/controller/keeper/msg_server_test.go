@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/gogo/protobuf/proto"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	"github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/types"
@@ -83,9 +83,8 @@ func (suite *KeeperTestSuite) TestRegisterInterchainAccount_MsgServer() {
 			suite.Require().Equal(expectedChannelID, res.ChannelId)
 
 			events := ctx.EventManager().Events()
-			suite.Require().Len(events, 2)
+			suite.Require().Len(events, 1)
 			suite.Require().Equal(events[0].Type, channeltypes.EventTypeChannelOpenInit)
-			suite.Require().Equal(events[1].Type, sdk.EventTypeMessage)
 		} else {
 			suite.Require().Error(err)
 			suite.Require().Nil(res)
