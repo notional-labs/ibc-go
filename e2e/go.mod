@@ -10,7 +10,7 @@ require (
 	github.com/cosmos/interchain-accounts v0.5.1
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/strangelove-ventures/interchaintest/v7 v7.0.0-20230322043324-cb6ba0947fff
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.uber.org/zap v1.24.0
 	golang.org/x/mod v0.10.0
 	google.golang.org/grpc v1.54.0
