@@ -10,7 +10,7 @@ require (
 	cosmossdk.io/tools/rosetta v0.2.1
 	github.com/CosmWasm/wasmvm v1.2.1
 	github.com/armon/go-metrics v0.4.1
-	github.com/cometbft/cometbft v0.37.0
+	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.7.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2
 	github.com/cosmos/cosmos-sdk v0.47.0
