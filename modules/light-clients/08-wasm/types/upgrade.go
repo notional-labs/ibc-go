@@ -59,6 +59,7 @@ func (c ClientState) VerifyUpgradeAndUpdateState(
 		},
 	}
 
+	c.CodeId = wasmUpgradeClientState.CodeId
 	_, err = call[contractResult](payload, &c, ctx, store)
 
 	return err
