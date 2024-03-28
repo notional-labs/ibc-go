@@ -24,4 +24,8 @@ var (
 	ErrWasmCodeIDNotFound   = errorsmod.Register(ModuleName, 16, "wasm code id not found")
 	ErrInvalid              = errorsmod.Register(ModuleName, 17, "invalid")
 	ErrCreateFailed         = errorsmod.Register(ModuleName, 18, "create wasm contract failed")
+
+	ErrWasmContractCallFailed = errorsmod.Register(ModuleName, 19, "wasm contract call failed")
+	ErrInvalidChecksum        = errorsmod.Register(ModuleName, 20, "invalid checksum")
+	ErrRetrieveClientID       = errorsmod.Register(ModuleName, 21, "failed to retrieve client id")
 )

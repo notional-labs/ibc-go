@@ -48,6 +48,19 @@ func (cs ClientState) Validate() error {
 	return nil
 }
 
+// ValidateBasic performs a basic validation of the client state fields.
+func (cs ClientState) ValidateBasic() error {
+	if len(cs.Data) == 0 {
+		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
+	}
+
+	if len(cs.CodeId) == 0 {
+		return errorsmod.Wrap(ErrInvalidCodeId, "code ID cannot be empty")
+	}
+
+	return nil
+}
+
 type (
 	statusPayloadInner struct{}
 	statusPayload      struct {

@@ -76,10 +76,8 @@ func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte, storeFn func(code co
 	}
 
 	// run the code through the wasm light client validation process
-	if isValidWasmCode, err := types.ValidateWasmCode(code); err != nil {
-		return nil, errorsmod.Wrapf(types.ErrWasmCodeValidation, "unable to validate wasm code: %s", err)
-	} else if !isValidWasmCode {
-		return nil, types.ErrWasmInvalidCode
+	if err := types.ValidateWasmCode(code); err != nil {
+		return nil, errorsmod.Wrap(err, "wasm bytecode validation failed")
 	}
 
 	// create the code in the vm
@@ -187,4 +185,19 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	}
 
 	return genesisState
+}
+
+// InitializePinnedCodes updates wasmvm to pin to cache all contracts marked as pinned
+func InitializePinnedCodes(ctx sdk.Context) error {
+	checksums, err := types.GetAllChecksums(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, checksum := range checksums {
+		if err := types.WasmVM.Pin(checksum); err != nil {
+			return err
+		}
+	}
+	return nil
 }

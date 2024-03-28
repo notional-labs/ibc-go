@@ -4,7 +4,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 )
 

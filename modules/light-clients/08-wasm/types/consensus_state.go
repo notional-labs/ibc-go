@@ -3,7 +3,6 @@ package types
 import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
-
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
@@ -28,4 +27,11 @@ func (m ConsensusState) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// NewConsensusState creates a new ConsensusState instance.
+func NewConsensusState(data []byte) *ConsensusState {
+	return &ConsensusState{
+		Data: data,
+	}
 }
