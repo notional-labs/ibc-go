@@ -122,12 +122,8 @@ func (suite *TypesTestSuite) setupWasmWithMockVM() (ibctesting.TestingApp, map[s
 // storeWasmCode stores the wasm code on chain and returns the checksum.
 func storeWasmCode(suite *TypesTestSuite, wasmCode []byte) types.Checksum {
 	ctx := suite.chainA.GetContext().WithBlockGasMeter(storetypes.NewInfiniteGasMeter())
-
-	msg := types.MsgPushNewWasmCode{
-		Signer: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Code:   wasmCode,
-	}
-	response, err := GetSimApp(suite.chainA).WasmClientKeeper.PushNewWasmCode(ctx, &msg)
+	msg := types.NewMsgPushNewWasmCode(authtypes.NewModuleAddress(govtypes.ModuleName).String(), wasmCode)
+	response, err := GetSimApp(suite.chainA).WasmClientKeeper.PushNewWasmCode(ctx, msg)
 	suite.Require().NoError(err)
 	suite.Require().NotNil(response.CodeId)
 	return response.CodeId

@@ -2,8 +2,6 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	"fmt"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
@@ -18,12 +16,8 @@ func (m ConsensusState) GetTimestamp() uint64 {
 }
 
 func (m ConsensusState) ValidateBasic() error {
-	if m.Timestamp == 0 {
-		return errorsmod.Wrap(clienttypes.ErrInvalidConsensus, "timestamp cannot be zero Unix time")
-	}
-
-	if m.Data == nil || len(m.Data) == 0 {
-		return fmt.Errorf("data cannot be empty")
+	if len(m.Data) == 0 {
+		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
 	}
 
 	return nil

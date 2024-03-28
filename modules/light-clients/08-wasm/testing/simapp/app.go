@@ -3,10 +3,12 @@ package simapp
 import (
 	"encoding/json"
 	"fmt"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"io"
 	"os"
 	"path/filepath"
 
+	cmtos "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cast"
@@ -472,6 +474,7 @@ func NewSimApp(
 			authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 			wasmConfig.DataDir,
 			&app.IBCKeeper.ClientKeeper,
+			app.GRPCQueryRouter(),
 		)
 	} else {
 		app.WasmClientKeeper = wasmkeeper.NewKeeper(
@@ -479,7 +482,8 @@ func NewSimApp(
 			runtime.NewKVStoreService(keys[wasmtypes.StoreKey]),
 			authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 			wasmConfig.DataDir,
-			&app.IBCKeeper.ClientKeeper)
+			&app.IBCKeeper.ClientKeeper,
+			app.GRPCQueryRouter())
 	}
 
 	// IBC Fee Module keeper
@@ -824,12 +828,12 @@ func NewSimApp(
 			panic(fmt.Errorf("error loading last version: %w", err))
 		}
 
-		//ctx := app.BaseApp.NewUncachedContext(true, cmtproto.Header{})
-		//
-		//// Initialize pinned codes in wasmvm as they are not persisted there
-		//if err := wasmkeeper.InitializePinnedCodes(ctx); err != nil {
-		//	cmtos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
-		//}
+		ctx := app.BaseApp.NewUncachedContext(true, cmtproto.Header{})
+
+		// Initialize pinned codes in wasmvm as they are not persisted there
+		if err := wasmkeeper.InitializePinnedCodes(ctx); err != nil {
+			cmtos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
+		}
 	}
 
 	app.ScopedIBCKeeper = scopedIBCKeeper

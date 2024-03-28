@@ -2,16 +2,22 @@ package types
 
 import (
 	storetypes "cosmossdk.io/store/types"
+	"errors"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var (
-	WasmVM        *cosmwasm.VM
+	WasmVM        ibcwasm.WasmEngine
 	VMGasRegister = NewDefaultWasmGasRegister()
+	wasmvmAPI     = cosmwasm.GoAPI{
+		HumanAddress:     humanAddress,
+		CanonicalAddress: canonicalAddress,
+	}
 )
 
 type queryResponse struct {
@@ -107,12 +113,9 @@ func callContract(codeID []byte, ctx sdk.Context, store storetypes.KVStore, msg 
 		},
 	}
 
-	msgInfo := wasmvmtypes.MessageInfo{
-		Sender: "",
-		Funds:  nil,
-	}
 	ctx.GasMeter().ConsumeGas(VMGasRegister.InstantiateContractCosts(len(msg)), "Loading CosmWasm module: execute")
-	resp, gasUsed, err := WasmVM.Execute(codeID, env, msgInfo, msg, NewStoreAdapter(store), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	resp, gasUsed, err := WasmVM.Sudo(codeID, env, msg, NewStoreAdapter(store), wasmvmAPI,
+		nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
 }
@@ -146,4 +149,12 @@ func queryContractWithStore(codeID cosmwasm.Checksum, ctx sdk.Context, store sto
 	resp, gasUsed, err := WasmVM.Query(codeID, env, msg, NewStoreAdapter(store), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return resp, err
+}
+
+func humanAddress(canon []byte) (string, uint64, error) {
+	return "", 0, errors.New("humanAddress not implemented")
+}
+
+func canonicalAddress(human string) ([]byte, uint64, error) {
+	return nil, 0, errors.New("canonicalAddress not implemented")
 }

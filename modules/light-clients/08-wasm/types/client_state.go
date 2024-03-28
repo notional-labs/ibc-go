@@ -41,10 +41,9 @@ func (cs ClientState) Validate() error {
 		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
 	}
 
-	if len(cs.CodeId) == 0 {
-		return errorsmod.Wrap(ErrInvalidCodeId, "code ID cannot be empty")
+	if err := ValidateWasmChecksum(cs.CodeId); err != nil {
+		return err
 	}
-
 	return nil
 }
 
@@ -54,8 +53,8 @@ func (cs ClientState) ValidateBasic() error {
 		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
 	}
 
-	if len(cs.CodeId) == 0 {
-		return errorsmod.Wrap(ErrInvalidCodeId, "code ID cannot be empty")
+	if err := ValidateWasmChecksum(cs.CodeId); err != nil {
+		return err
 	}
 
 	return nil

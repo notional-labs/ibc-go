@@ -33,7 +33,10 @@ type Keeper struct {
 	clientKeeper *clientkeeper.Keeper
 }
 
-func NewKeeper(cdc codec.BinaryCodec, key storetypes.KVStoreService, authority string, homeDir string, clientKeeper *clientkeeper.Keeper) Keeper {
+func NewKeeper(cdc codec.BinaryCodec,
+	key storetypes.KVStoreService, authority string,
+	homeDir string, clientKeeper *clientkeeper.Keeper, queryRouter ibcwasm.QueryRouter,
+) Keeper {
 	// Wasm VM
 	wasmDataDir := filepath.Join(homeDir, "wasm_client_data")
 	wasmSupportedFeatures := strings.Join([]string{"storage", "iterator"}, ",")
@@ -46,6 +49,9 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.KVStoreService, authority s
 		panic(err)
 	}
 	types.WasmVM = vm
+	ibcwasm.SetQueryPlugins(types.NewDefaultQueryPlugins())
+	ibcwasm.SetQueryRouter(queryRouter)
+	ibcwasm.SetupWasmStoreService(key)
 
 	// governance authority
 
