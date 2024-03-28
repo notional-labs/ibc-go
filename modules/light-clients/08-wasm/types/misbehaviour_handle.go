@@ -2,28 +2,44 @@ package types
 
 import (
 	storetypes "cosmossdk.io/store/types"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
-// CheckForMisbehaviour detects misbehaviour in a submitted Header message and verifies
-// the correctness of a submitted Misbehaviour ClientMessage
-func (cs ClientState) CheckForMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) bool {
-	clientMessage, ok := clientMsg.(*ClientMessage)
-	if !ok {
+type checkForMisbehaviourPayload struct {
+	CheckForMisbehaviour checkForMisbehaviourInnerPayload `json:"check_for_misbehaviour"`
+}
+type checkForMisbehaviourInnerPayload struct {
+	ClientMessage clientMessageConcretePayloadClientMessage `json:"client_message"`
+}
+
+func (c ClientState) CheckForMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, msg exported.ClientMessage) bool {
+	clientMsgConcrete := clientMessageConcretePayloadClientMessage{
+		Header:       nil,
+		Misbehaviour: nil,
+	}
+	switch clientMsg := msg.(type) {
+	case *Header:
+		clientMsgConcrete.Header = clientMsg
+	case *Misbehaviour:
+		clientMsgConcrete.Misbehaviour = clientMsg
+	}
+
+	if clientMsgConcrete.Header == nil && clientMsgConcrete.Misbehaviour == nil {
 		return false
 	}
 
-	payload := QueryMsg{
-		CheckForMisbehaviour: &CheckForMisbehaviourMsg{ClientMessage: clientMessage.Data},
+	inner := checkForMisbehaviourInnerPayload{
+		ClientMessage: clientMsgConcrete,
+	}
+	payload := checkForMisbehaviourPayload{
+		CheckForMisbehaviour: inner,
 	}
 
-	result, err := wasmQuery[CheckForMisbehaviourResult](ctx, clientStore, &cs, payload)
+	result, err := call[contractResult](payload, &c, ctx, clientStore)
 	if err != nil {
-		return false
+		panic(err)
 	}
 
 	return result.FoundMisbehaviour

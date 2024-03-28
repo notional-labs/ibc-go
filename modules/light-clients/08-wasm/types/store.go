@@ -3,30 +3,168 @@ package types
 import (
 	"bytes"
 	"context"
-	"errors"
-	"io"
-	"reflect"
-	"strings"
-
-	wasmvm "github.com/CosmWasm/wasmvm"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-
 	errorsmod "cosmossdk.io/errors"
+	wasmvm "github.com/CosmWasm/wasmvm"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
+	"io"
+
 	"cosmossdk.io/store/cachekv"
-	storeprefix "cosmossdk.io/store/prefix"
 	"cosmossdk.io/store/tracekv"
 	storetypes "cosmossdk.io/store/types"
-
-	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
-var (
-	_ wasmvmtypes.KVStore = &storeAdapter{}
-	_ storetypes.KVStore  = &migrateClientWrappedStore{}
+// WrappedStore combines two KVStores into one while transparently routing the calls based on key prefix
+type WrappedStore struct {
+	first  storetypes.KVStore
+	second storetypes.KVStore
 
-	subjectPrefix    = []byte("subject/")
-	substitutePrefix = []byte("substitute/")
-)
+	firstPrefix  []byte
+	secondPrefix []byte
+}
+
+func NewWrappedStore(first, second storetypes.KVStore, firstPrefix, secondPrefix []byte) WrappedStore {
+	return WrappedStore{
+		first:        first,
+		second:       second,
+		firstPrefix:  firstPrefix,
+		secondPrefix: secondPrefix,
+	}
+}
+
+func (ws WrappedStore) Get(key []byte) []byte {
+	return ws.getStore(key).Get(ws.trimPrefix(key))
+}
+
+func (ws WrappedStore) Has(key []byte) bool {
+	return ws.getStore(key).Has(ws.trimPrefix(key))
+}
+
+func (ws WrappedStore) Set(key, value []byte) {
+	ws.getStore(key).Set(ws.trimPrefix(key), value)
+}
+
+func (ws WrappedStore) Delete(key []byte) {
+	ws.getStore(key).Delete(ws.trimPrefix(key))
+}
+
+func (ws WrappedStore) GetStoreType() storetypes.StoreType {
+	return ws.first.GetStoreType()
+}
+
+func (ws WrappedStore) Iterator(start, end []byte) storetypes.Iterator {
+	return ws.getStore(start).Iterator(ws.trimPrefix(start), ws.trimPrefix(end))
+}
+
+func (ws WrappedStore) ReverseIterator(start, end []byte) storetypes.Iterator {
+	return ws.getStore(start).ReverseIterator(ws.trimPrefix(start), ws.trimPrefix(end))
+}
+
+func (ws WrappedStore) CacheWrap() storetypes.CacheWrap {
+	return cachekv.NewStore(ws)
+}
+
+func (ws WrappedStore) CacheWrapWithTrace(w io.Writer, tc storetypes.TraceContext) storetypes.CacheWrap {
+	return cachekv.NewStore(tracekv.NewStore(ws, w, tc))
+}
+
+func (ws WrappedStore) trimPrefix(key []byte) []byte {
+	if bytes.HasPrefix(key, ws.firstPrefix) {
+		key = bytes.TrimPrefix(key, ws.firstPrefix)
+	} else {
+		key = bytes.TrimPrefix(key, ws.secondPrefix)
+	}
+
+	return key
+}
+
+func (ws WrappedStore) getStore(key []byte) storetypes.KVStore {
+	if bytes.HasPrefix(key, ws.firstPrefix) {
+		return ws.first
+	}
+
+	return ws.second
+}
+
+// setClientState stores the client state
+func setClientState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, clientState *ClientState) {
+	key := host.ClientStateKey()
+	val := clienttypes.MustMarshalClientState(cdc, clientState)
+	clientStore.Set(key, val)
+}
+
+// setConsensusState stores the consensus state at the given height.
+func setConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, consensusState *ConsensusState, height exported.Height) {
+	key := host.ConsensusStateKey(height)
+	val := clienttypes.MustMarshalConsensusState(cdc, consensusState)
+	clientStore.Set(key, val)
+}
+
+// GetConsensusState retrieves the consensus state from the client prefixed
+// store. An error is returned if the consensus state does not exist.
+func GetConsensusState(store storetypes.KVStore, cdc codec.BinaryCodec, height exported.Height) (*ConsensusState, error) {
+	bz := store.Get(host.ConsensusStateKey(height))
+	if bz == nil {
+		return nil, errorsmod.Wrapf(
+			clienttypes.ErrConsensusStateNotFound,
+			"consensus state does not exist for height %s", height,
+		)
+	}
+
+	consensusStateI, err := clienttypes.UnmarshalConsensusState(cdc, bz)
+	if err != nil {
+		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "unmarshal error: %v", err)
+	}
+
+	consensusState, ok := consensusStateI.(*ConsensusState)
+	if !ok {
+		return nil, errorsmod.Wrapf(
+			clienttypes.ErrInvalidConsensus,
+			"invalid consensus type %T, expected %T", consensusState, &ConsensusState{},
+		)
+	}
+
+	return consensusState, nil
+}
+
+var _ wasmvmtypes.KVStore = &StoreAdapter{}
+
+// StoreAdapter adapter to bridge SDK store impl to wasmvm
+type StoreAdapter struct {
+	parent storetypes.KVStore
+}
+
+// NewStoreAdapter constructor
+func NewStoreAdapter(s storetypes.KVStore) *StoreAdapter {
+	if s == nil {
+		panic("store must not be nil")
+	}
+	return &StoreAdapter{parent: s}
+}
+
+func (s StoreAdapter) Get(key []byte) []byte {
+	return s.parent.Get(key)
+}
+
+func (s StoreAdapter) Set(key, value []byte) {
+	s.parent.Set(key, value)
+}
+
+func (s StoreAdapter) Delete(key []byte) {
+	s.parent.Delete(key)
+}
+
+func (s StoreAdapter) Iterator(start, end []byte) wasmvmtypes.Iterator {
+	return s.parent.Iterator(start, end)
+}
+
+func (s StoreAdapter) ReverseIterator(start, end []byte) wasmvmtypes.Iterator {
+	return s.parent.ReverseIterator(start, end)
+}
 
 // Checksum is a type alias used for wasm byte code checksums.
 type Checksum = wasmvmtypes.Checksum
@@ -70,254 +208,4 @@ func HasChecksum(ctx context.Context, checksum Checksum) bool {
 	}
 
 	return found
-}
-
-// migrateClientWrappedStore combines two KVStores into one.
-//
-// Both stores are used for reads, but only the subjectStore is used for writes. For all operations, the key
-// is checked to determine which store to use and must be prefixed with either "subject/" or "substitute/" accordingly.
-// If the key is not prefixed with either "subject/" or "substitute/", a default action is taken (e.g. no-op for Set/Delete).
-type migrateClientWrappedStore struct {
-	subjectStore    storetypes.KVStore
-	substituteStore storetypes.KVStore
-}
-
-func newMigrateClientWrappedStore(subjectStore, substituteStore storetypes.KVStore) migrateClientWrappedStore {
-	if subjectStore == nil {
-		panic(errors.New("subjectStore must not be nil"))
-	}
-	if substituteStore == nil {
-		panic(errors.New("substituteStore must not be nil"))
-	}
-
-	return migrateClientWrappedStore{
-		subjectStore:    subjectStore,
-		substituteStore: substituteStore,
-	}
-}
-
-// Get implements the storetypes.KVStore interface. It allows reads from both the subjectStore and substituteStore.
-//
-// Get will return an empty byte slice if the key is not prefixed with either "subject/" or "substitute/".
-func (ws migrateClientWrappedStore) Get(key []byte) []byte {
-	prefix, key := splitPrefix(key)
-
-	store, found := ws.getStore(prefix)
-	if !found {
-		// return a nil byte slice as KVStore.Get() does by default
-		return []byte(nil)
-	}
-
-	return store.Get(key)
-}
-
-// Has implements the storetypes.KVStore interface. It allows reads from both the subjectStore and substituteStore.
-//
-// Note: contracts do not have access to the Has method, it is only implemented here to satisfy the storetypes.KVStore interface.
-func (ws migrateClientWrappedStore) Has(key []byte) bool {
-	prefix, key := splitPrefix(key)
-
-	store, found := ws.getStore(prefix)
-	if !found {
-		// return false as value when store is not found
-		return false
-	}
-
-	return store.Has(key)
-}
-
-// Set implements the storetypes.KVStore interface. It allows writes solely to the subjectStore.
-//
-// Set will no-op if the key is not prefixed with "subject/".
-func (ws migrateClientWrappedStore) Set(key, value []byte) {
-	prefix, key := splitPrefix(key)
-	if !bytes.Equal(prefix, subjectPrefix) {
-		return // no-op
-	}
-
-	ws.subjectStore.Set(key, value)
-}
-
-// Delete implements the storetypes.KVStore interface. It allows deletions solely to the subjectStore.
-//
-// Delete will no-op if the key is not prefixed with "subject/".
-func (ws migrateClientWrappedStore) Delete(key []byte) {
-	prefix, key := splitPrefix(key)
-	if !bytes.Equal(prefix, subjectPrefix) {
-		return // no-op
-	}
-
-	ws.subjectStore.Delete(key)
-}
-
-// Iterator implements the storetypes.KVStore interface. It allows iteration over both the subjectStore and substituteStore.
-//
-// Iterator will return a closed iterator if the start or end keys are not prefixed with either "subject/" or "substitute/".
-func (ws migrateClientWrappedStore) Iterator(start, end []byte) storetypes.Iterator {
-	prefixStart, start := splitPrefix(start)
-	prefixEnd, end := splitPrefix(end)
-
-	if !bytes.Equal(prefixStart, prefixEnd) {
-		return ws.closedIterator()
-	}
-
-	store, found := ws.getStore(prefixStart)
-	if !found {
-		return ws.closedIterator()
-	}
-
-	return store.Iterator(start, end)
-}
-
-// ReverseIterator implements the storetypes.KVStore interface. It allows iteration over both the subjectStore and substituteStore.
-//
-// ReverseIterator will return a closed iterator if the start or end keys are not prefixed with either "subject/" or "substitute/".
-func (ws migrateClientWrappedStore) ReverseIterator(start, end []byte) storetypes.Iterator {
-	prefixStart, start := splitPrefix(start)
-	prefixEnd, end := splitPrefix(end)
-
-	if !bytes.Equal(prefixStart, prefixEnd) {
-		return ws.closedIterator()
-	}
-
-	store, found := ws.getStore(prefixStart)
-	if !found {
-		return ws.closedIterator()
-	}
-
-	return store.ReverseIterator(start, end)
-}
-
-// GetStoreType implements the storetypes.KVStore interface, it is implemented solely to satisfy the interface.
-func (ws migrateClientWrappedStore) GetStoreType() storetypes.StoreType {
-	return ws.substituteStore.GetStoreType()
-}
-
-// CacheWrap implements the storetypes.KVStore interface, it is implemented solely to satisfy the interface.
-func (ws migrateClientWrappedStore) CacheWrap() storetypes.CacheWrap {
-	return cachekv.NewStore(ws)
-}
-
-// CacheWrapWithTrace implements the storetypes.KVStore interface, it is implemented solely to satisfy the interface.
-func (ws migrateClientWrappedStore) CacheWrapWithTrace(w io.Writer, tc storetypes.TraceContext) storetypes.CacheWrap {
-	return cachekv.NewStore(tracekv.NewStore(ws, w, tc))
-}
-
-// getStore returns the store to be used for the given key and a boolean flag indicating if that store was found.
-// If the key is prefixed with "subject/", the subjectStore is returned. If the key is prefixed with "substitute/",
-// the substituteStore is returned.
-//
-// If the key is not prefixed with either "subject/" or "substitute/", a nil store is returned and the boolean flag is false.
-func (ws migrateClientWrappedStore) getStore(prefix []byte) (storetypes.KVStore, bool) {
-	if bytes.Equal(prefix, subjectPrefix) {
-		return ws.subjectStore, true
-	} else if bytes.Equal(prefix, substitutePrefix) {
-		return ws.substituteStore, true
-	}
-
-	return nil, false
-}
-
-// closedIterator returns an iterator that is always closed, used when Iterator() or ReverseIterator() is called
-// with an invalid prefix or start/end key.
-func (ws migrateClientWrappedStore) closedIterator() storetypes.Iterator {
-	// Create a dummy iterator that is always closed right away.
-	it := ws.subjectStore.Iterator([]byte{0}, []byte{1})
-	it.Close()
-
-	return it
-}
-
-// splitPrefix splits the key into the prefix and the key itself, if the key is prefixed with either "subject/" or "substitute/".
-// If the key is not prefixed with either "subject/" or "substitute/", the prefix is nil.
-func splitPrefix(key []byte) ([]byte, []byte) {
-	if bytes.HasPrefix(key, subjectPrefix) {
-		return subjectPrefix, bytes.TrimPrefix(key, subjectPrefix)
-	} else if bytes.HasPrefix(key, substitutePrefix) {
-		return substitutePrefix, bytes.TrimPrefix(key, substitutePrefix)
-	}
-
-	return nil, key
-}
-
-// storeAdapter bridges the SDK store implementation to wasmvm one. It implements the wasmvmtypes.KVStore interface.
-type storeAdapter struct {
-	parent storetypes.KVStore
-}
-
-// newStoreAdapter constructor
-func newStoreAdapter(s storetypes.KVStore) *storeAdapter {
-	if s == nil {
-		panic(errors.New("store must not be nil"))
-	}
-	return &storeAdapter{parent: s}
-}
-
-// Get implements the wasmvmtypes.KVStore interface.
-func (s storeAdapter) Get(key []byte) []byte {
-	return s.parent.Get(key)
-}
-
-// Set implements the wasmvmtypes.KVStore interface.
-func (s storeAdapter) Set(key, value []byte) {
-	s.parent.Set(key, value)
-}
-
-// Delete implements the wasmvmtypes.KVStore interface.
-func (s storeAdapter) Delete(key []byte) {
-	s.parent.Delete(key)
-}
-
-// Iterator implements the wasmvmtypes.KVStore interface.
-func (s storeAdapter) Iterator(start, end []byte) wasmvmtypes.Iterator {
-	return s.parent.Iterator(start, end)
-}
-
-// ReverseIterator implements the wasmvmtypes.KVStore interface.
-func (s storeAdapter) ReverseIterator(start, end []byte) wasmvmtypes.Iterator {
-	return s.parent.ReverseIterator(start, end)
-}
-
-// getClientID extracts and validates the clientID from the clientStore's prefix.
-//
-// Due to the 02-client module not passing the clientID to the 08-wasm module,
-// this function was devised to infer it from the store's prefix.
-// The expected format of the clientStore prefix is "<placeholder>/{clientID}/".
-// If the clientStore is of type migrateProposalWrappedStore, the subjectStore's prefix is utilized instead.
-func getClientID(clientStore storetypes.KVStore) (string, error) {
-	upws, isMigrateProposalWrappedStore := clientStore.(migrateClientWrappedStore)
-	if isMigrateProposalWrappedStore {
-		// if the clientStore is a migrateProposalWrappedStore, we retrieve the subjectStore
-		// because the contract call will be made on the client with the ID of the subjectStore
-		clientStore = upws.subjectStore
-	}
-
-	store, ok := clientStore.(storeprefix.Store)
-	if !ok {
-		return "", errorsmod.Wrap(ErrRetrieveClientID, "clientStore is not a prefix store")
-	}
-
-	// using reflect to retrieve the private prefix field
-	r := reflect.ValueOf(&store).Elem()
-
-	f := r.FieldByName("prefix")
-	if !f.IsValid() {
-		return "", errorsmod.Wrap(ErrRetrieveClientID, "prefix field not found")
-	}
-
-	prefix := string(f.Bytes())
-
-	split := strings.Split(prefix, "/")
-	if len(split) < 3 {
-		return "", errorsmod.Wrap(ErrRetrieveClientID, "prefix is not of the expected form")
-	}
-
-	// the clientID is the second to last element of the prefix
-	// the prefix is expected to be of the form "<placeholder>/{clientID}/"
-	clientID := split[len(split)-2]
-	if err := ValidateClientID(clientID); err != nil {
-		return "", errorsmod.Wrapf(ErrRetrieveClientID, "prefix does not contain a valid clientID: %s", err.Error())
-	}
-
-	return clientID, nil
 }

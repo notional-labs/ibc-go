@@ -5,6 +5,7 @@ package types
 
 import (
 	fmt "fmt"
+	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	types "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -26,11 +27,12 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Wasm light client's Client state
 type ClientState struct {
-	// bytes encoding the client state of the underlying light client
-	// implemented as a Wasm contract.
 	Data         []byte       `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Checksum     []byte       `protobuf:"bytes,2,opt,name=checksum,proto3" json:"checksum,omitempty"`
-	LatestHeight types.Height `protobuf:"bytes,3,opt,name=latest_height,json=latestHeight,proto3" json:"latest_height"`
+	CodeId       []byte       `protobuf:"bytes,2,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty"`
+	LatestHeight types.Height `protobuf:"bytes,3,opt,name=latest_height,json=latestHeight,proto3" json:"latest_height" yaml:"latest_height"`
+	// Types that are valid to be assigned to XInner:
+	//	*ClientState_Inner
+	XInner isClientState_XInner `protobuf_oneof:"_inner" json:",omitempty"`
 }
 
 func (m *ClientState) Reset()         { *m = ClientState{} }
@@ -66,11 +68,48 @@ func (m *ClientState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ClientState proto.InternalMessageInfo
 
+type isClientState_XInner interface {
+	isClientState_XInner()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ClientState_Inner struct {
+	Inner *types1.Any `protobuf:"bytes,100,opt,name=inner,proto3,oneof" json:"inner,omitempty"`
+}
+
+func (*ClientState_Inner) isClientState_XInner() {}
+
+func (m *ClientState) GetXInner() isClientState_XInner {
+	if m != nil {
+		return m.XInner
+	}
+	return nil
+}
+
+func (m *ClientState) GetInner() *types1.Any {
+	if x, ok := m.GetXInner().(*ClientState_Inner); ok {
+		return x.Inner
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ClientState) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*ClientState_Inner)(nil),
+	}
+}
+
 // Wasm light client's ConsensusState
 type ConsensusState struct {
-	// bytes encoding the consensus state of the underlying light client
-	// implemented as a Wasm contract.
 	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	// timestamp that corresponds to the block height in which the ConsensusState
+	// was stored.
+	Timestamp uint64 `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Types that are valid to be assigned to XInner:
+	//	*ConsensusState_Inner
+	XInner isConsensusState_XInner `protobuf_oneof:"_inner" json:",omitempty"`
 }
 
 func (m *ConsensusState) Reset()         { *m = ConsensusState{} }
@@ -106,99 +145,157 @@ func (m *ConsensusState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ConsensusState proto.InternalMessageInfo
 
-// Wasm light client message (either header(s) or misbehaviour)
-type ClientMessage struct {
-	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+type isConsensusState_XInner interface {
+	isConsensusState_XInner()
+	MarshalTo([]byte) (int, error)
+	Size() int
 }
 
-func (m *ClientMessage) Reset()         { *m = ClientMessage{} }
-func (m *ClientMessage) String() string { return proto.CompactTextString(m) }
-func (*ClientMessage) ProtoMessage()    {}
-func (*ClientMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_678928ebbdee1807, []int{2}
-}
-func (m *ClientMessage) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ClientMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ClientMessage.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ClientMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientMessage.Merge(m, src)
-}
-func (m *ClientMessage) XXX_Size() int {
-	return m.Size()
-}
-func (m *ClientMessage) XXX_DiscardUnknown() {
-	xxx_messageInfo_ClientMessage.DiscardUnknown(m)
+type ConsensusState_Inner struct {
+	Inner *types1.Any `protobuf:"bytes,100,opt,name=inner,proto3,oneof" json:"inner,omitempty"`
 }
 
-var xxx_messageInfo_ClientMessage proto.InternalMessageInfo
+func (*ConsensusState_Inner) isConsensusState_XInner() {}
 
-// Checksums defines a list of all checksums that are stored
-//
-// Deprecated: This message is deprecated in favor of storing the checksums
-// using a Collections.KeySet.
-//
-// Deprecated: Do not use.
-type Checksums struct {
-	Checksums [][]byte `protobuf:"bytes,1,rep,name=checksums,proto3" json:"checksums,omitempty"`
-}
-
-func (m *Checksums) Reset()         { *m = Checksums{} }
-func (m *Checksums) String() string { return proto.CompactTextString(m) }
-func (*Checksums) ProtoMessage()    {}
-func (*Checksums) Descriptor() ([]byte, []int) {
-	return fileDescriptor_678928ebbdee1807, []int{3}
-}
-func (m *Checksums) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Checksums) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Checksums.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Checksums) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Checksums.Merge(m, src)
-}
-func (m *Checksums) XXX_Size() int {
-	return m.Size()
-}
-func (m *Checksums) XXX_DiscardUnknown() {
-	xxx_messageInfo_Checksums.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Checksums proto.InternalMessageInfo
-
-func (m *Checksums) GetChecksums() [][]byte {
+func (m *ConsensusState) GetXInner() isConsensusState_XInner {
 	if m != nil {
-		return m.Checksums
+		return m.XInner
 	}
 	return nil
 }
 
+func (m *ConsensusState) GetInner() *types1.Any {
+	if x, ok := m.GetXInner().(*ConsensusState_Inner); ok {
+		return x.Inner
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*ConsensusState) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*ConsensusState_Inner)(nil),
+	}
+}
+
+// Wasm light client Header
+type Header struct {
+	Data   []byte       `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Height types.Height `protobuf:"bytes,2,opt,name=height,proto3" json:"height" yaml:"height"`
+	// Types that are valid to be assigned to XInner:
+	//	*Header_Inner
+	XInner isHeader_XInner `protobuf_oneof:"_inner" json:",omitempty"`
+}
+
+func (m *Header) Reset()         { *m = Header{} }
+func (m *Header) String() string { return proto.CompactTextString(m) }
+func (*Header) ProtoMessage()    {}
+func (*Header) Descriptor() ([]byte, []int) {
+	return fileDescriptor_678928ebbdee1807, []int{2}
+}
+func (m *Header) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Header) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Header.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Header) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Header.Merge(m, src)
+}
+func (m *Header) XXX_Size() int {
+	return m.Size()
+}
+func (m *Header) XXX_DiscardUnknown() {
+	xxx_messageInfo_Header.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Header proto.InternalMessageInfo
+
+type isHeader_XInner interface {
+	isHeader_XInner()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Header_Inner struct {
+	Inner *types1.Any `protobuf:"bytes,100,opt,name=inner,proto3,oneof" json:"inner,omitempty"`
+}
+
+func (*Header_Inner) isHeader_XInner() {}
+
+func (m *Header) GetXInner() isHeader_XInner {
+	if m != nil {
+		return m.XInner
+	}
+	return nil
+}
+
+func (m *Header) GetInner() *types1.Any {
+	if x, ok := m.GetXInner().(*Header_Inner); ok {
+		return x.Inner
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Header) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*Header_Inner)(nil),
+	}
+}
+
+// Wasm light client Misbehaviour
+type Misbehaviour struct {
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (m *Misbehaviour) Reset()         { *m = Misbehaviour{} }
+func (m *Misbehaviour) String() string { return proto.CompactTextString(m) }
+func (*Misbehaviour) ProtoMessage()    {}
+func (*Misbehaviour) Descriptor() ([]byte, []int) {
+	return fileDescriptor_678928ebbdee1807, []int{3}
+}
+func (m *Misbehaviour) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Misbehaviour) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Misbehaviour.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Misbehaviour) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Misbehaviour.Merge(m, src)
+}
+func (m *Misbehaviour) XXX_Size() int {
+	return m.Size()
+}
+func (m *Misbehaviour) XXX_DiscardUnknown() {
+	xxx_messageInfo_Misbehaviour.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Misbehaviour proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*ClientState)(nil), "ibc.lightclients.wasm.v1.ClientState")
 	proto.RegisterType((*ConsensusState)(nil), "ibc.lightclients.wasm.v1.ConsensusState")
-	proto.RegisterType((*ClientMessage)(nil), "ibc.lightclients.wasm.v1.ClientMessage")
-	proto.RegisterType((*Checksums)(nil), "ibc.lightclients.wasm.v1.Checksums")
+	proto.RegisterType((*Header)(nil), "ibc.lightclients.wasm.v1.Header")
+	proto.RegisterType((*Misbehaviour)(nil), "ibc.lightclients.wasm.v1.Misbehaviour")
 }
 
 func init() {
@@ -206,29 +303,35 @@ func init() {
 }
 
 var fileDescriptor_678928ebbdee1807 = []byte{
-	// 339 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x91, 0xb1, 0x4e, 0xc3, 0x30,
-	0x10, 0x86, 0xe3, 0xb6, 0x42, 0xd4, 0x6d, 0x19, 0x22, 0x86, 0x28, 0x42, 0x69, 0x55, 0x96, 0x82,
-	0x14, 0x9b, 0xc2, 0x82, 0x2a, 0xa6, 0x56, 0x48, 0x2c, 0x2c, 0x45, 0x62, 0x60, 0x41, 0x89, 0x6b,
-	0x25, 0x16, 0x49, 0x5d, 0xf5, 0x9c, 0x22, 0xde, 0x00, 0x31, 0xf1, 0x08, 0x3c, 0x4e, 0xc7, 0x8e,
-	0x4c, 0x08, 0xb5, 0x2f, 0x82, 0x6c, 0xa7, 0xc0, 0x02, 0x53, 0x2e, 0xbf, 0x3f, 0xdf, 0x7d, 0xf2,
-	0xe1, 0x43, 0x11, 0x33, 0x9a, 0x89, 0x24, 0x55, 0x2c, 0x13, 0x7c, 0xaa, 0x80, 0x3e, 0x46, 0x90,
-	0xd3, 0x45, 0xdf, 0x7c, 0xc9, 0x6c, 0x2e, 0x95, 0x74, 0x3d, 0x11, 0x33, 0xf2, 0x1b, 0x22, 0xe6,
-	0x70, 0xd1, 0xf7, 0xf7, 0x13, 0x99, 0x48, 0x03, 0x51, 0x5d, 0x59, 0xde, 0x6f, 0xeb, 0xa6, 0x4c,
-	0xce, 0x39, 0xb5, 0xbc, 0x6e, 0x67, 0x2b, 0x0b, 0x74, 0x5f, 0x10, 0x6e, 0x8c, 0x4c, 0x70, 0xa3,
-	0x22, 0xc5, 0x5d, 0x17, 0xd7, 0x26, 0x91, 0x8a, 0x3c, 0xd4, 0x41, 0xbd, 0xe6, 0xd8, 0xd4, 0xae,
-	0x8f, 0x77, 0x59, 0xca, 0xd9, 0x03, 0x14, 0xb9, 0x57, 0x31, 0xf9, 0xf7, 0xbf, 0x7b, 0x89, 0x5b,
-	0x59, 0xa4, 0x38, 0xa8, 0xfb, 0x94, 0x6b, 0x2d, 0xaf, 0xda, 0x41, 0xbd, 0xc6, 0xa9, 0x4f, 0xb4,
-	0xa8, 0x1e, 0x4c, 0xca, 0x71, 0x8b, 0x3e, 0xb9, 0x32, 0xc4, 0xb0, 0xb6, 0xfc, 0x68, 0x3b, 0xe3,
-	0xa6, 0xbd, 0x66, 0xb3, 0x41, 0xed, 0xf9, 0xad, 0xed, 0x74, 0x8f, 0xf1, 0xde, 0x48, 0x4e, 0x81,
-	0x4f, 0xa1, 0x80, 0x3f, 0x75, 0x4a, 0xf6, 0x08, 0xb7, 0xac, 0xf7, 0x35, 0x07, 0x88, 0x92, 0xff,
-	0xd0, 0x10, 0xd7, 0x47, 0xa5, 0x2f, 0xb8, 0x07, 0xb8, 0xbe, 0x95, 0x07, 0x0f, 0x75, 0xaa, 0xbd,
-	0xe6, 0xf8, 0x27, 0x18, 0x54, 0x3c, 0x34, 0xbc, 0x5d, 0xae, 0x03, 0xb4, 0x5a, 0x07, 0xe8, 0x73,
-	0x1d, 0xa0, 0xd7, 0x4d, 0xe0, 0xac, 0x36, 0x81, 0xf3, 0xbe, 0x09, 0x9c, 0xbb, 0x8b, 0x44, 0xa8,
-	0xb4, 0x88, 0x09, 0x93, 0x39, 0x65, 0x12, 0x72, 0x09, 0x54, 0xc4, 0x2c, 0x4c, 0x24, 0xcd, 0xe5,
-	0xa4, 0xc8, 0x38, 0xd8, 0xfd, 0x85, 0xdb, 0x05, 0x9e, 0x9c, 0x87, 0x66, 0x87, 0xea, 0x69, 0xc6,
-	0x21, 0xde, 0x31, 0x2f, 0x7e, 0xf6, 0x15, 0x00, 0x00, 0xff, 0xff, 0xdb, 0x78, 0x4d, 0x63, 0xe9,
-	0x01, 0x00, 0x00,
+	// 438 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x3f, 0x8f, 0xd3, 0x30,
+	0x14, 0x8f, 0x8f, 0x12, 0xc0, 0xd7, 0x63, 0x88, 0x8a, 0x08, 0xd5, 0x29, 0x39, 0x85, 0xa5, 0x4b,
+	0x6d, 0x0a, 0x03, 0xe8, 0x16, 0xc4, 0x75, 0x69, 0x07, 0x96, 0x30, 0x81, 0x84, 0x2a, 0xc7, 0x31,
+	0x89, 0xa5, 0x24, 0xae, 0x62, 0x27, 0x28, 0x33, 0x4b, 0x47, 0x3e, 0x02, 0x23, 0x1f, 0xa5, 0x63,
+	0x47, 0xc4, 0x50, 0xa1, 0xf6, 0x1b, 0xf0, 0x09, 0x50, 0xec, 0x54, 0x80, 0x54, 0xc4, 0xd0, 0x29,
+	0xef, 0xbd, 0xfc, 0xfc, 0x7e, 0x7f, 0xa4, 0x07, 0x1f, 0xf3, 0x88, 0xe2, 0x8c, 0x27, 0xa9, 0xa2,
+	0x19, 0x67, 0x85, 0x92, 0xf8, 0x23, 0x91, 0x39, 0xae, 0x27, 0xfa, 0x8b, 0x96, 0xa5, 0x50, 0xc2,
+	0x71, 0x79, 0x44, 0xd1, 0x9f, 0x20, 0xa4, 0x7f, 0xd6, 0x93, 0xe1, 0x20, 0x11, 0x89, 0xd0, 0x20,
+	0xdc, 0x56, 0x06, 0x3f, 0x7c, 0x94, 0x08, 0x91, 0x64, 0x0c, 0xeb, 0x2e, 0xaa, 0x3e, 0x60, 0x52,
+	0x34, 0xdd, 0x2f, 0xbf, 0xe5, 0xa3, 0xa2, 0x64, 0xd8, 0xac, 0x6a, 0x99, 0x4c, 0x65, 0x00, 0xc1,
+	0x77, 0x00, 0xcf, 0xa7, 0x7a, 0xf0, 0x46, 0x11, 0xc5, 0x1c, 0x07, 0xf6, 0x62, 0xa2, 0x88, 0x0b,
+	0xae, 0xc0, 0xa8, 0x1f, 0xea, 0xda, 0x79, 0x08, 0xef, 0x50, 0x11, 0xb3, 0x05, 0x8f, 0xdd, 0x33,
+	0x3d, 0xb6, 0xdb, 0x76, 0x1e, 0x3b, 0xef, 0xe1, 0x45, 0x46, 0x14, 0x93, 0x6a, 0x91, 0xb2, 0x56,
+	0xae, 0x7b, 0xeb, 0x0a, 0x8c, 0xce, 0x9f, 0x0e, 0x51, 0x6b, 0xa0, 0x65, 0x45, 0x1d, 0x57, 0x3d,
+	0x41, 0x33, 0x8d, 0xb8, 0xb9, 0x5c, 0x6f, 0x7d, 0xeb, 0xe7, 0xd6, 0x1f, 0x34, 0x24, 0xcf, 0xae,
+	0x83, 0xbf, 0x9e, 0x07, 0x61, 0xdf, 0xf4, 0x06, 0xeb, 0x60, 0x78, 0x9b, 0x17, 0x05, 0x2b, 0xdd,
+	0x58, 0xaf, 0x1d, 0x20, 0xe3, 0x13, 0x1d, 0x7c, 0xa2, 0x57, 0x45, 0x33, 0xb3, 0x42, 0x03, 0x5a,
+	0x01, 0x70, 0xdd, 0x5b, 0x7d, 0xf1, 0xad, 0x9b, 0xbb, 0xd0, 0x5e, 0xe8, 0x51, 0xf0, 0x09, 0xc0,
+	0xfb, 0x53, 0x51, 0x48, 0x56, 0xc8, 0x4a, 0xfe, 0xdb, 0xdf, 0x25, 0xbc, 0xa7, 0x78, 0xce, 0xa4,
+	0x22, 0xf9, 0x52, 0x3b, 0xec, 0x85, 0xbf, 0x07, 0xa7, 0xab, 0xf8, 0x0a, 0xa0, 0x3d, 0x63, 0x24,
+	0x66, 0xe5, 0x51, 0xf6, 0x39, 0xb4, 0xbb, 0xf4, 0xce, 0xfe, 0x9b, 0xde, 0x83, 0x2e, 0xbd, 0x0b,
+	0x93, 0xde, 0x21, 0xb6, 0x6e, 0xc1, 0xe9, 0x52, 0x47, 0xb0, 0xff, 0x9a, 0xcb, 0x88, 0xa5, 0xa4,
+	0xe6, 0xa2, 0x3a, 0xaa, 0xb7, 0x7b, 0xf3, 0x76, 0xbd, 0xf3, 0xc0, 0x66, 0xe7, 0x81, 0x1f, 0x3b,
+	0x0f, 0x7c, 0xde, 0x7b, 0xd6, 0x66, 0xef, 0x59, 0xdf, 0xf6, 0x9e, 0xf5, 0xee, 0x65, 0xc2, 0x55,
+	0x5a, 0x45, 0x88, 0x8a, 0x1c, 0x53, 0x21, 0x73, 0x21, 0x31, 0x8f, 0xe8, 0x38, 0x11, 0xb8, 0x7e,
+	0x8e, 0x73, 0x11, 0x57, 0x19, 0x93, 0xe6, 0x04, 0xc6, 0x87, 0x1b, 0x78, 0xf2, 0x62, 0xac, 0xcf,
+	0x40, 0x35, 0x4b, 0x26, 0x23, 0x5b, 0xcb, 0x7d, 0xf6, 0x2b, 0x00, 0x00, 0xff, 0xff, 0xa6, 0x09,
+	0xb5, 0x6f, 0x2c, 0x03, 0x00, 0x00,
 }
 
 func (m *ClientState) Marshal() (dAtA []byte, err error) {
@@ -251,6 +354,15 @@ func (m *ClientState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.XInner != nil {
+		{
+			size := m.XInner.Size()
+			i -= size
+			if _, err := m.XInner.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
 	{
 		size, err := m.LatestHeight.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -261,10 +373,10 @@ func (m *ClientState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0x1a
-	if len(m.Checksum) > 0 {
-		i -= len(m.Checksum)
-		copy(dAtA[i:], m.Checksum)
-		i = encodeVarintWasm(dAtA, i, uint64(len(m.Checksum)))
+	if len(m.CodeId) > 0 {
+		i -= len(m.CodeId)
+		copy(dAtA[i:], m.CodeId)
+		i = encodeVarintWasm(dAtA, i, uint64(len(m.CodeId)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -278,6 +390,29 @@ func (m *ClientState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ClientState_Inner) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ClientState_Inner) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Inner != nil {
+		{
+			size, err := m.Inner.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWasm(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xa2
+	}
+	return len(dAtA) - i, nil
+}
 func (m *ConsensusState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -298,74 +433,151 @@ func (m *ConsensusState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintWasm(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ClientMessage) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ClientMessage) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ClientMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintWasm(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Checksums) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Checksums) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Checksums) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Checksums) > 0 {
-		for iNdEx := len(m.Checksums) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Checksums[iNdEx])
-			copy(dAtA[i:], m.Checksums[iNdEx])
-			i = encodeVarintWasm(dAtA, i, uint64(len(m.Checksums[iNdEx])))
-			i--
-			dAtA[i] = 0xa
+	if m.XInner != nil {
+		{
+			size := m.XInner.Size()
+			i -= size
+			if _, err := m.XInner.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
 		}
+	}
+	if m.Timestamp != 0 {
+		i = encodeVarintWasm(dAtA, i, uint64(m.Timestamp))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintWasm(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ConsensusState_Inner) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConsensusState_Inner) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Inner != nil {
+		{
+			size, err := m.Inner.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWasm(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xa2
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Header) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Header) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Header) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XInner != nil {
+		{
+			size := m.XInner.Size()
+			i -= size
+			if _, err := m.XInner.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	{
+		size, err := m.Height.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintWasm(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintWasm(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Header_Inner) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Header_Inner) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Inner != nil {
+		{
+			size, err := m.Inner.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWasm(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x6
+		i--
+		dAtA[i] = 0xa2
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Misbehaviour) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Misbehaviour) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Misbehaviour) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintWasm(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -391,15 +603,30 @@ func (m *ClientState) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWasm(uint64(l))
 	}
-	l = len(m.Checksum)
+	l = len(m.CodeId)
 	if l > 0 {
 		n += 1 + l + sovWasm(uint64(l))
 	}
 	l = m.LatestHeight.Size()
 	n += 1 + l + sovWasm(uint64(l))
+	if m.XInner != nil {
+		n += m.XInner.Size()
+	}
 	return n
 }
 
+func (m *ClientState_Inner) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Inner != nil {
+		l = m.Inner.Size()
+		n += 2 + l + sovWasm(uint64(l))
+	}
+	return n
+}
 func (m *ConsensusState) Size() (n int) {
 	if m == nil {
 		return 0
@@ -410,10 +637,28 @@ func (m *ConsensusState) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWasm(uint64(l))
 	}
+	if m.Timestamp != 0 {
+		n += 1 + sovWasm(uint64(m.Timestamp))
+	}
+	if m.XInner != nil {
+		n += m.XInner.Size()
+	}
 	return n
 }
 
-func (m *ClientMessage) Size() (n int) {
+func (m *ConsensusState_Inner) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Inner != nil {
+		l = m.Inner.Size()
+		n += 2 + l + sovWasm(uint64(l))
+	}
+	return n
+}
+func (m *Header) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -423,20 +668,35 @@ func (m *ClientMessage) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWasm(uint64(l))
 	}
+	l = m.Height.Size()
+	n += 1 + l + sovWasm(uint64(l))
+	if m.XInner != nil {
+		n += m.XInner.Size()
+	}
 	return n
 }
 
-func (m *Checksums) Size() (n int) {
+func (m *Header_Inner) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Checksums) > 0 {
-		for _, b := range m.Checksums {
-			l = len(b)
-			n += 1 + l + sovWasm(uint64(l))
-		}
+	if m.Inner != nil {
+		l = m.Inner.Size()
+		n += 2 + l + sovWasm(uint64(l))
+	}
+	return n
+}
+func (m *Misbehaviour) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Data)
+	if l > 0 {
+		n += 1 + l + sovWasm(uint64(l))
 	}
 	return n
 }
@@ -512,7 +772,7 @@ func (m *ClientState) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checksum", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CodeId", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -539,9 +799,9 @@ func (m *ClientState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Checksum = append(m.Checksum[:0], dAtA[iNdEx:postIndex]...)
-			if m.Checksum == nil {
-				m.Checksum = []byte{}
+			m.CodeId = append(m.CodeId[:0], dAtA[iNdEx:postIndex]...)
+			if m.CodeId == nil {
+				m.CodeId = []byte{}
 			}
 			iNdEx = postIndex
 		case 3:
@@ -576,6 +836,41 @@ func (m *ClientState) Unmarshal(dAtA []byte) error {
 			if err := m.LatestHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 100:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Inner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWasm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWasm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWasm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types1.Any{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.XInner = &ClientState_Inner{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -661,6 +956,60 @@ func (m *ConsensusState) Unmarshal(dAtA []byte) error {
 				m.Data = []byte{}
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWasm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Timestamp |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 100:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Inner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWasm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWasm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWasm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types1.Any{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.XInner = &ConsensusState_Inner{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWasm(dAtA[iNdEx:])
@@ -682,7 +1031,7 @@ func (m *ConsensusState) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ClientMessage) Unmarshal(dAtA []byte) error {
+func (m *Header) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -705,10 +1054,10 @@ func (m *ClientMessage) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ClientMessage: wiretype end group for non-group")
+			return fmt.Errorf("proto: Header: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ClientMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Header: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -745,6 +1094,74 @@ func (m *ClientMessage) Unmarshal(dAtA []byte) error {
 				m.Data = []byte{}
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWasm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWasm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWasm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Height.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 100:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Inner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWasm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWasm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWasm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types1.Any{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.XInner = &Header_Inner{v}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWasm(dAtA[iNdEx:])
@@ -766,7 +1183,7 @@ func (m *ClientMessage) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Checksums) Unmarshal(dAtA []byte) error {
+func (m *Misbehaviour) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -789,15 +1206,15 @@ func (m *Checksums) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Checksums: wiretype end group for non-group")
+			return fmt.Errorf("proto: Misbehaviour: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Checksums: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Misbehaviour: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checksums", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -824,8 +1241,10 @@ func (m *Checksums) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Checksums = append(m.Checksums, make([]byte, postIndex-iNdEx))
-			copy(m.Checksums[len(m.Checksums)-1], dAtA[iNdEx:postIndex])
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
+			if m.Data == nil {
+				m.Data = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

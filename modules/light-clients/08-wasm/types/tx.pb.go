@@ -6,7 +6,6 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
@@ -28,26 +27,24 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgStoreCode defines the request type for the StoreCode rpc.
-type MsgStoreCode struct {
-	// signer address
+// Message type to push new wasm code
+type MsgPushNewWasmCode struct {
 	Signer string `protobuf:"bytes,1,opt,name=signer,proto3" json:"signer,omitempty"`
-	// wasm byte code of light client contract. It can be raw or gzip compressed
-	WasmByteCode []byte `protobuf:"bytes,2,opt,name=wasm_byte_code,json=wasmByteCode,proto3" json:"wasm_byte_code,omitempty"`
+	Code   []byte `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
 }
 
-func (m *MsgStoreCode) Reset()         { *m = MsgStoreCode{} }
-func (m *MsgStoreCode) String() string { return proto.CompactTextString(m) }
-func (*MsgStoreCode) ProtoMessage()    {}
-func (*MsgStoreCode) Descriptor() ([]byte, []int) {
+func (m *MsgPushNewWasmCode) Reset()         { *m = MsgPushNewWasmCode{} }
+func (m *MsgPushNewWasmCode) String() string { return proto.CompactTextString(m) }
+func (*MsgPushNewWasmCode) ProtoMessage()    {}
+func (*MsgPushNewWasmCode) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1d9737363bf1e38d, []int{0}
 }
-func (m *MsgStoreCode) XXX_Unmarshal(b []byte) error {
+func (m *MsgPushNewWasmCode) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgStoreCode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgPushNewWasmCode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgStoreCode.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgPushNewWasmCode.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -57,50 +54,49 @@ func (m *MsgStoreCode) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *MsgStoreCode) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgStoreCode.Merge(m, src)
+func (m *MsgPushNewWasmCode) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgPushNewWasmCode.Merge(m, src)
 }
-func (m *MsgStoreCode) XXX_Size() int {
+func (m *MsgPushNewWasmCode) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgStoreCode) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgStoreCode.DiscardUnknown(m)
+func (m *MsgPushNewWasmCode) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgPushNewWasmCode.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgStoreCode proto.InternalMessageInfo
+var xxx_messageInfo_MsgPushNewWasmCode proto.InternalMessageInfo
 
-func (m *MsgStoreCode) GetSigner() string {
+func (m *MsgPushNewWasmCode) GetSigner() string {
 	if m != nil {
 		return m.Signer
 	}
 	return ""
 }
 
-func (m *MsgStoreCode) GetWasmByteCode() []byte {
+func (m *MsgPushNewWasmCode) GetCode() []byte {
 	if m != nil {
-		return m.WasmByteCode
+		return m.Code
 	}
 	return nil
 }
 
-// MsgStoreCodeResponse defines the response type for the StoreCode rpc
-type MsgStoreCodeResponse struct {
-	// checksum is the sha256 hash of the stored code
-	Checksum []byte `protobuf:"bytes,1,opt,name=checksum,proto3" json:"checksum,omitempty"`
+// Response in case of successful handling
+type MsgPushNewWasmCodeResponse struct {
+	CodeId []byte `protobuf:"bytes,1,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty"`
 }
 
-func (m *MsgStoreCodeResponse) Reset()         { *m = MsgStoreCodeResponse{} }
-func (m *MsgStoreCodeResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgStoreCodeResponse) ProtoMessage()    {}
-func (*MsgStoreCodeResponse) Descriptor() ([]byte, []int) {
+func (m *MsgPushNewWasmCodeResponse) Reset()         { *m = MsgPushNewWasmCodeResponse{} }
+func (m *MsgPushNewWasmCodeResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgPushNewWasmCodeResponse) ProtoMessage()    {}
+func (*MsgPushNewWasmCodeResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1d9737363bf1e38d, []int{1}
 }
-func (m *MsgStoreCodeResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgPushNewWasmCodeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgStoreCodeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgPushNewWasmCodeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgStoreCodeResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgPushNewWasmCodeResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -110,45 +106,44 @@ func (m *MsgStoreCodeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *MsgStoreCodeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgStoreCodeResponse.Merge(m, src)
+func (m *MsgPushNewWasmCodeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgPushNewWasmCodeResponse.Merge(m, src)
 }
-func (m *MsgStoreCodeResponse) XXX_Size() int {
+func (m *MsgPushNewWasmCodeResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgStoreCodeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgStoreCodeResponse.DiscardUnknown(m)
+func (m *MsgPushNewWasmCodeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgPushNewWasmCodeResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgStoreCodeResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgPushNewWasmCodeResponse proto.InternalMessageInfo
 
-func (m *MsgStoreCodeResponse) GetChecksum() []byte {
+func (m *MsgPushNewWasmCodeResponse) GetCodeId() []byte {
 	if m != nil {
-		return m.Checksum
+		return m.CodeId
 	}
 	return nil
 }
 
-// MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
-type MsgRemoveChecksum struct {
-	// signer address
-	Signer string `protobuf:"bytes,1,opt,name=signer,proto3" json:"signer,omitempty"`
-	// checksum is the sha256 hash to be removed from the store
-	Checksum []byte `protobuf:"bytes,2,opt,name=checksum,proto3" json:"checksum,omitempty"`
+// Message type to update wasm code id
+type MsgUpdateWasmCodeId struct {
+	Signer   string `protobuf:"bytes,1,opt,name=signer,proto3" json:"signer,omitempty"`
+	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	CodeId   []byte `protobuf:"bytes,3,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty"`
 }
 
-func (m *MsgRemoveChecksum) Reset()         { *m = MsgRemoveChecksum{} }
-func (m *MsgRemoveChecksum) String() string { return proto.CompactTextString(m) }
-func (*MsgRemoveChecksum) ProtoMessage()    {}
-func (*MsgRemoveChecksum) Descriptor() ([]byte, []int) {
+func (m *MsgUpdateWasmCodeId) Reset()         { *m = MsgUpdateWasmCodeId{} }
+func (m *MsgUpdateWasmCodeId) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateWasmCodeId) ProtoMessage()    {}
+func (*MsgUpdateWasmCodeId) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1d9737363bf1e38d, []int{2}
 }
-func (m *MsgRemoveChecksum) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateWasmCodeId) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgRemoveChecksum) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateWasmCodeId) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgRemoveChecksum.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateWasmCodeId.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -158,158 +153,57 @@ func (m *MsgRemoveChecksum) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *MsgRemoveChecksum) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgRemoveChecksum.Merge(m, src)
+func (m *MsgUpdateWasmCodeId) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateWasmCodeId.Merge(m, src)
 }
-func (m *MsgRemoveChecksum) XXX_Size() int {
+func (m *MsgUpdateWasmCodeId) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgRemoveChecksum) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgRemoveChecksum.DiscardUnknown(m)
+func (m *MsgUpdateWasmCodeId) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateWasmCodeId.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgRemoveChecksum proto.InternalMessageInfo
+var xxx_messageInfo_MsgUpdateWasmCodeId proto.InternalMessageInfo
 
-func (m *MsgRemoveChecksum) GetSigner() string {
+func (m *MsgUpdateWasmCodeId) GetSigner() string {
 	if m != nil {
 		return m.Signer
 	}
 	return ""
 }
 
-func (m *MsgRemoveChecksum) GetChecksum() []byte {
-	if m != nil {
-		return m.Checksum
-	}
-	return nil
-}
-
-// MsgStoreChecksumResponse defines the response type for the StoreCode rpc
-type MsgRemoveChecksumResponse struct {
-}
-
-func (m *MsgRemoveChecksumResponse) Reset()         { *m = MsgRemoveChecksumResponse{} }
-func (m *MsgRemoveChecksumResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgRemoveChecksumResponse) ProtoMessage()    {}
-func (*MsgRemoveChecksumResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1d9737363bf1e38d, []int{3}
-}
-func (m *MsgRemoveChecksumResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgRemoveChecksumResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgRemoveChecksumResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgRemoveChecksumResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgRemoveChecksumResponse.Merge(m, src)
-}
-func (m *MsgRemoveChecksumResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgRemoveChecksumResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgRemoveChecksumResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgRemoveChecksumResponse proto.InternalMessageInfo
-
-// MsgMigrateContract defines the request type for the MigrateContract rpc.
-type MsgMigrateContract struct {
-	// signer address
-	Signer string `protobuf:"bytes,1,opt,name=signer,proto3" json:"signer,omitempty"`
-	// the client id of the contract
-	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// checksum is the sha256 hash of the new wasm byte code for the contract
-	Checksum []byte `protobuf:"bytes,3,opt,name=checksum,proto3" json:"checksum,omitempty"`
-	// the json encoded message to be passed to the contract on migration
-	Msg []byte `protobuf:"bytes,4,opt,name=msg,proto3" json:"msg,omitempty"`
-}
-
-func (m *MsgMigrateContract) Reset()         { *m = MsgMigrateContract{} }
-func (m *MsgMigrateContract) String() string { return proto.CompactTextString(m) }
-func (*MsgMigrateContract) ProtoMessage()    {}
-func (*MsgMigrateContract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1d9737363bf1e38d, []int{4}
-}
-func (m *MsgMigrateContract) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgMigrateContract) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgMigrateContract.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgMigrateContract) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgMigrateContract.Merge(m, src)
-}
-func (m *MsgMigrateContract) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgMigrateContract) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgMigrateContract.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgMigrateContract proto.InternalMessageInfo
-
-func (m *MsgMigrateContract) GetSigner() string {
-	if m != nil {
-		return m.Signer
-	}
-	return ""
-}
-
-func (m *MsgMigrateContract) GetClientId() string {
+func (m *MsgUpdateWasmCodeId) GetClientId() string {
 	if m != nil {
 		return m.ClientId
 	}
 	return ""
 }
 
-func (m *MsgMigrateContract) GetChecksum() []byte {
+func (m *MsgUpdateWasmCodeId) GetCodeId() []byte {
 	if m != nil {
-		return m.Checksum
+		return m.CodeId
 	}
 	return nil
 }
 
-func (m *MsgMigrateContract) GetMsg() []byte {
-	if m != nil {
-		return m.Msg
-	}
-	return nil
+// Response in case of successful handling
+type MsgUpdateWasmCodeIdResponse struct {
+	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	CodeId   []byte `protobuf:"bytes,2,opt,name=code_id,json=codeId,proto3" json:"code_id,omitempty"`
 }
 
-// MsgMigrateContractResponse defines the response type for the MigrateContract rpc
-type MsgMigrateContractResponse struct {
+func (m *MsgUpdateWasmCodeIdResponse) Reset()         { *m = MsgUpdateWasmCodeIdResponse{} }
+func (m *MsgUpdateWasmCodeIdResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateWasmCodeIdResponse) ProtoMessage()    {}
+func (*MsgUpdateWasmCodeIdResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d9737363bf1e38d, []int{3}
 }
-
-func (m *MsgMigrateContractResponse) Reset()         { *m = MsgMigrateContractResponse{} }
-func (m *MsgMigrateContractResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgMigrateContractResponse) ProtoMessage()    {}
-func (*MsgMigrateContractResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1d9737363bf1e38d, []int{5}
-}
-func (m *MsgMigrateContractResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateWasmCodeIdResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgMigrateContractResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateWasmCodeIdResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgMigrateContractResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateWasmCodeIdResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -319,59 +213,65 @@ func (m *MsgMigrateContractResponse) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *MsgMigrateContractResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgMigrateContractResponse.Merge(m, src)
+func (m *MsgUpdateWasmCodeIdResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateWasmCodeIdResponse.Merge(m, src)
 }
-func (m *MsgMigrateContractResponse) XXX_Size() int {
+func (m *MsgUpdateWasmCodeIdResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgMigrateContractResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgMigrateContractResponse.DiscardUnknown(m)
+func (m *MsgUpdateWasmCodeIdResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateWasmCodeIdResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgMigrateContractResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgUpdateWasmCodeIdResponse proto.InternalMessageInfo
+
+func (m *MsgUpdateWasmCodeIdResponse) GetClientId() string {
+	if m != nil {
+		return m.ClientId
+	}
+	return ""
+}
+
+func (m *MsgUpdateWasmCodeIdResponse) GetCodeId() []byte {
+	if m != nil {
+		return m.CodeId
+	}
+	return nil
+}
 
 func init() {
-	proto.RegisterType((*MsgStoreCode)(nil), "ibc.lightclients.wasm.v1.MsgStoreCode")
-	proto.RegisterType((*MsgStoreCodeResponse)(nil), "ibc.lightclients.wasm.v1.MsgStoreCodeResponse")
-	proto.RegisterType((*MsgRemoveChecksum)(nil), "ibc.lightclients.wasm.v1.MsgRemoveChecksum")
-	proto.RegisterType((*MsgRemoveChecksumResponse)(nil), "ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse")
-	proto.RegisterType((*MsgMigrateContract)(nil), "ibc.lightclients.wasm.v1.MsgMigrateContract")
-	proto.RegisterType((*MsgMigrateContractResponse)(nil), "ibc.lightclients.wasm.v1.MsgMigrateContractResponse")
+	proto.RegisterType((*MsgPushNewWasmCode)(nil), "ibc.lightclients.wasm.v1.MsgPushNewWasmCode")
+	proto.RegisterType((*MsgPushNewWasmCodeResponse)(nil), "ibc.lightclients.wasm.v1.MsgPushNewWasmCodeResponse")
+	proto.RegisterType((*MsgUpdateWasmCodeId)(nil), "ibc.lightclients.wasm.v1.MsgUpdateWasmCodeId")
+	proto.RegisterType((*MsgUpdateWasmCodeIdResponse)(nil), "ibc.lightclients.wasm.v1.MsgUpdateWasmCodeIdResponse")
 }
 
 func init() { proto.RegisterFile("ibc/lightclients/wasm/v1/tx.proto", fileDescriptor_1d9737363bf1e38d) }
 
 var fileDescriptor_1d9737363bf1e38d = []byte{
-	// 445 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x4d, 0x6f, 0xd3, 0x40,
-	0x14, 0xcc, 0x26, 0x50, 0x35, 0x8f, 0xa8, 0x80, 0x85, 0x20, 0xb8, 0xc8, 0x2a, 0x11, 0x42, 0x55,
-	0x21, 0x6b, 0xda, 0x72, 0x40, 0x88, 0x53, 0x7b, 0xe2, 0xe0, 0x8b, 0x41, 0x48, 0x70, 0x89, 0xe2,
-	0xf5, 0x6a, 0xb3, 0x22, 0xeb, 0x8d, 0xfc, 0xd6, 0x81, 0xdc, 0x10, 0xe2, 0x07, 0xf0, 0x53, 0xfa,
-	0x33, 0x38, 0xf6, 0xc8, 0x81, 0x03, 0x4a, 0x0e, 0xfd, 0x1b, 0xc8, 0x5f, 0xc1, 0x4e, 0x95, 0xaa,
-	0xb9, 0x79, 0x9f, 0xe6, 0xcd, 0x8c, 0xdf, 0x68, 0xe0, 0xb1, 0x0c, 0x98, 0x3b, 0x96, 0x62, 0x64,
-	0xd8, 0x58, 0xf2, 0xc8, 0xa0, 0xfb, 0x65, 0x88, 0xca, 0x9d, 0x1e, 0xba, 0xe6, 0x2b, 0x9d, 0xc4,
-	0xda, 0x68, 0xab, 0x2b, 0x03, 0x46, 0xab, 0x10, 0x9a, 0x42, 0xe8, 0xf4, 0xd0, 0x7e, 0xc0, 0x34,
-	0x2a, 0x8d, 0xae, 0x42, 0x91, 0x6e, 0x28, 0x14, 0xf9, 0x4a, 0xef, 0x23, 0x74, 0x3c, 0x14, 0xef,
-	0x8c, 0x8e, 0xf9, 0xa9, 0x0e, 0xb9, 0x75, 0x1f, 0xb6, 0x50, 0x8a, 0x88, 0xc7, 0x5d, 0xb2, 0x47,
-	0xf6, 0xdb, 0x7e, 0xf1, 0xb2, 0x9e, 0xc0, 0x4e, 0xca, 0x35, 0x08, 0x66, 0x86, 0x0f, 0x98, 0x0e,
-	0x79, 0xb7, 0xb9, 0x47, 0xf6, 0x3b, 0x7e, 0x27, 0x9d, 0x9e, 0xcc, 0x4c, 0xb6, 0xfd, 0xfa, 0xd6,
-	0xf7, 0x8b, 0xb3, 0x83, 0x62, 0xa5, 0x77, 0x04, 0xf7, 0xaa, 0xd4, 0x3e, 0xc7, 0x89, 0x8e, 0x90,
-	0x5b, 0x36, 0x6c, 0xb3, 0x11, 0x67, 0x9f, 0x31, 0x51, 0x99, 0x48, 0xc7, 0x5f, 0xbe, 0x7b, 0xef,
-	0xe1, 0xae, 0x87, 0xc2, 0xe7, 0x4a, 0x4f, 0xf9, 0x69, 0x31, 0x5c, 0xeb, 0xa9, 0x4a, 0xd4, 0xac,
-	0x13, 0xd5, 0x9d, 0xec, 0xc2, 0xc3, 0x4b, 0xac, 0xa5, 0x9d, 0xde, 0x0f, 0x02, 0x96, 0x87, 0xc2,
-	0x93, 0x22, 0x1e, 0xa6, 0xbf, 0x11, 0x99, 0x78, 0xc8, 0xcc, 0x5a, 0xd1, 0x5d, 0x68, 0xe7, 0xc7,
-	0x1d, 0xc8, 0x30, 0x53, 0x6d, 0xfb, 0xdb, 0xf9, 0xe0, 0x6d, 0x58, 0x73, 0xd4, 0xaa, 0x3b, 0xb2,
-	0xee, 0x40, 0x4b, 0xa1, 0xe8, 0xde, 0xc8, 0xc6, 0xe9, 0x67, 0xdd, 0xe3, 0x23, 0xb0, 0x2f, 0xbb,
-	0x28, 0x4d, 0x1e, 0xfd, 0x69, 0x42, 0xcb, 0x43, 0x61, 0x31, 0x68, 0xff, 0xcf, 0xea, 0x29, 0x5d,
-	0x97, 0x37, 0xad, 0x1e, 0xde, 0xa6, 0xd7, 0xc3, 0x2d, 0x03, 0x8a, 0x61, 0x67, 0x25, 0x81, 0x67,
-	0x57, 0x32, 0xd4, 0xc1, 0xf6, 0xf1, 0x06, 0xe0, 0xa5, 0x66, 0x02, 0xb7, 0x57, 0x13, 0x78, 0x7e,
-	0x25, 0xcf, 0x0a, 0xda, 0x7e, 0xb9, 0x09, 0xba, 0x94, 0xb5, 0x6f, 0x7e, 0xbb, 0x38, 0x3b, 0x20,
-	0x27, 0x1f, 0x7e, 0xcd, 0x1d, 0x72, 0x3e, 0x77, 0xc8, 0xdf, 0xb9, 0x43, 0x7e, 0x2e, 0x9c, 0xc6,
-	0xf9, 0xc2, 0x69, 0xfc, 0x5e, 0x38, 0x8d, 0x4f, 0x6f, 0x84, 0x34, 0xa3, 0x24, 0xa0, 0x4c, 0x2b,
-	0xb7, 0xe8, 0x90, 0x0c, 0x58, 0x5f, 0x68, 0x57, 0xe9, 0x30, 0x19, 0x73, 0xcc, 0x2b, 0xd9, 0x2f,
-	0x3b, 0xf9, 0xe2, 0x55, 0x3f, 0xab, 0xa5, 0x99, 0x4d, 0x38, 0x06, 0x5b, 0x59, 0xc9, 0x8e, 0xff,
-	0x05, 0x00, 0x00, 0xff, 0xff, 0x5f, 0xb7, 0xbc, 0xcb, 0xbc, 0x03, 0x00, 0x00,
+	// 351 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xcf, 0x4e, 0x2a, 0x31,
+	0x18, 0xc5, 0x29, 0xdc, 0x70, 0x2f, 0x0d, 0xc9, 0x35, 0x35, 0x51, 0x02, 0xc9, 0x04, 0x59, 0xb1,
+	0x70, 0x5a, 0x51, 0x89, 0xee, 0x34, 0xba, 0x62, 0x81, 0x31, 0x63, 0x8c, 0xd1, 0x8d, 0x61, 0xda,
+	0xa6, 0x34, 0x61, 0xe8, 0x84, 0xaf, 0x03, 0xf8, 0x16, 0x3e, 0x96, 0x4b, 0x96, 0x2e, 0x0d, 0xbc,
+	0x83, 0x6b, 0x33, 0x83, 0x10, 0xfe, 0x88, 0x09, 0xbb, 0x7e, 0xed, 0xe9, 0xef, 0x7c, 0x39, 0x39,
+	0xf8, 0x40, 0xfb, 0x9c, 0x75, 0xb4, 0x6a, 0x5b, 0xde, 0xd1, 0xb2, 0x6b, 0x81, 0x0d, 0x5a, 0x10,
+	0xb0, 0x7e, 0x8d, 0xd9, 0x21, 0x0d, 0x7b, 0xc6, 0x1a, 0x52, 0xd0, 0x3e, 0xa7, 0x8b, 0x12, 0x1a,
+	0x4b, 0x68, 0xbf, 0x56, 0xb9, 0xc4, 0xa4, 0x09, 0xea, 0x36, 0x82, 0xf6, 0x8d, 0x1c, 0x3c, 0xb4,
+	0x20, 0xb8, 0x36, 0x42, 0x92, 0x3d, 0x9c, 0x05, 0xad, 0xba, 0xb2, 0x57, 0x40, 0x65, 0x54, 0xcd,
+	0x79, 0xdf, 0x13, 0x21, 0xf8, 0x0f, 0x37, 0x42, 0x16, 0xd2, 0x65, 0x54, 0xcd, 0x7b, 0xc9, 0xb9,
+	0x52, 0xc7, 0xc5, 0x75, 0x82, 0x27, 0x21, 0x34, 0x5d, 0x90, 0x64, 0x1f, 0xff, 0x8d, 0x55, 0xcf,
+	0x5a, 0x24, 0xa8, 0xbc, 0x97, 0x8d, 0xc7, 0x86, 0xa8, 0x70, 0xbc, 0xdb, 0x04, 0x75, 0x1f, 0x8a,
+	0x96, 0x95, 0xb3, 0x5f, 0x0d, 0xb1, 0xd1, 0xb9, 0x84, 0x73, 0xd3, 0xd5, 0x63, 0x52, 0x3a, 0x79,
+	0xfa, 0x37, 0xbd, 0x68, 0x88, 0x45, 0x93, 0xcc, 0x92, 0xc9, 0x1d, 0x2e, 0xfd, 0x60, 0x32, 0x5f,
+	0x6e, 0x09, 0x8a, 0x36, 0x43, 0xd3, 0x8b, 0xd0, 0xe3, 0x4f, 0x84, 0x33, 0x4d, 0x50, 0x24, 0xc2,
+	0xff, 0x57, 0x73, 0x3b, 0xa4, 0x9b, 0x82, 0xa6, 0xeb, 0x19, 0x15, 0x4f, 0xb7, 0x51, 0xcf, 0x97,
+	0x1e, 0xe2, 0x9d, 0xb5, 0xd4, 0xdc, 0x5f, 0x49, 0xab, 0xf2, 0x62, 0x7d, 0x2b, 0xf9, 0xcc, 0xf9,
+	0xea, 0xf1, 0x6d, 0xec, 0xa0, 0xd1, 0xd8, 0x41, 0x1f, 0x63, 0x07, 0xbd, 0x4e, 0x9c, 0xd4, 0x68,
+	0xe2, 0xa4, 0xde, 0x27, 0x4e, 0xea, 0xe9, 0x42, 0x69, 0xdb, 0x8e, 0x7c, 0xca, 0x4d, 0xc0, 0xb8,
+	0x81, 0xc0, 0x00, 0xd3, 0x3e, 0x77, 0x95, 0x61, 0xfd, 0x33, 0x16, 0x18, 0x11, 0x75, 0x24, 0x4c,
+	0x2b, 0xea, 0xce, 0x3a, 0x7a, 0x74, 0xee, 0x26, 0x35, 0xb5, 0x2f, 0xa1, 0x04, 0x3f, 0x9b, 0xf4,
+	0xf4, 0xe4, 0x2b, 0x00, 0x00, 0xff, 0xff, 0xa3, 0x41, 0x45, 0x75, 0xcc, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -386,12 +286,10 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// StoreCode defines a rpc handler method for MsgStoreCode.
-	StoreCode(ctx context.Context, in *MsgStoreCode, opts ...grpc.CallOption) (*MsgStoreCodeResponse, error)
-	// RemoveChecksum defines a rpc handler method for MsgRemoveChecksum.
-	RemoveChecksum(ctx context.Context, in *MsgRemoveChecksum, opts ...grpc.CallOption) (*MsgRemoveChecksumResponse, error)
-	// MigrateContract defines a rpc handler method for MsgMigrateContract.
-	MigrateContract(ctx context.Context, in *MsgMigrateContract, opts ...grpc.CallOption) (*MsgMigrateContractResponse, error)
+	// PushNewWasmCode defines a rpc handler method for PushNewWasmCode.
+	PushNewWasmCode(ctx context.Context, in *MsgPushNewWasmCode, opts ...grpc.CallOption) (*MsgPushNewWasmCodeResponse, error)
+	// UpdateWasmCodeId defines a rpc handler method for UpdateWasmCodeId.
+	UpdateWasmCodeId(ctx context.Context, in *MsgUpdateWasmCodeId, opts ...grpc.CallOption) (*MsgUpdateWasmCodeIdResponse, error)
 }
 
 type msgClient struct {
@@ -402,27 +300,18 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) StoreCode(ctx context.Context, in *MsgStoreCode, opts ...grpc.CallOption) (*MsgStoreCodeResponse, error) {
-	out := new(MsgStoreCodeResponse)
-	err := c.cc.Invoke(ctx, "/ibc.lightclients.wasm.v1.Msg/StoreCode", in, out, opts...)
+func (c *msgClient) PushNewWasmCode(ctx context.Context, in *MsgPushNewWasmCode, opts ...grpc.CallOption) (*MsgPushNewWasmCodeResponse, error) {
+	out := new(MsgPushNewWasmCodeResponse)
+	err := c.cc.Invoke(ctx, "/ibc.lightclients.wasm.v1.Msg/PushNewWasmCode", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) RemoveChecksum(ctx context.Context, in *MsgRemoveChecksum, opts ...grpc.CallOption) (*MsgRemoveChecksumResponse, error) {
-	out := new(MsgRemoveChecksumResponse)
-	err := c.cc.Invoke(ctx, "/ibc.lightclients.wasm.v1.Msg/RemoveChecksum", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *msgClient) MigrateContract(ctx context.Context, in *MsgMigrateContract, opts ...grpc.CallOption) (*MsgMigrateContractResponse, error) {
-	out := new(MsgMigrateContractResponse)
-	err := c.cc.Invoke(ctx, "/ibc.lightclients.wasm.v1.Msg/MigrateContract", in, out, opts...)
+func (c *msgClient) UpdateWasmCodeId(ctx context.Context, in *MsgUpdateWasmCodeId, opts ...grpc.CallOption) (*MsgUpdateWasmCodeIdResponse, error) {
+	out := new(MsgUpdateWasmCodeIdResponse)
+	err := c.cc.Invoke(ctx, "/ibc.lightclients.wasm.v1.Msg/UpdateWasmCodeId", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -431,82 +320,59 @@ func (c *msgClient) MigrateContract(ctx context.Context, in *MsgMigrateContract,
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// StoreCode defines a rpc handler method for MsgStoreCode.
-	StoreCode(context.Context, *MsgStoreCode) (*MsgStoreCodeResponse, error)
-	// RemoveChecksum defines a rpc handler method for MsgRemoveChecksum.
-	RemoveChecksum(context.Context, *MsgRemoveChecksum) (*MsgRemoveChecksumResponse, error)
-	// MigrateContract defines a rpc handler method for MsgMigrateContract.
-	MigrateContract(context.Context, *MsgMigrateContract) (*MsgMigrateContractResponse, error)
+	// PushNewWasmCode defines a rpc handler method for PushNewWasmCode.
+	PushNewWasmCode(context.Context, *MsgPushNewWasmCode) (*MsgPushNewWasmCodeResponse, error)
+	// UpdateWasmCodeId defines a rpc handler method for UpdateWasmCodeId.
+	UpdateWasmCodeId(context.Context, *MsgUpdateWasmCodeId) (*MsgUpdateWasmCodeIdResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) StoreCode(ctx context.Context, req *MsgStoreCode) (*MsgStoreCodeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StoreCode not implemented")
+func (*UnimplementedMsgServer) PushNewWasmCode(ctx context.Context, req *MsgPushNewWasmCode) (*MsgPushNewWasmCodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushNewWasmCode not implemented")
 }
-func (*UnimplementedMsgServer) RemoveChecksum(ctx context.Context, req *MsgRemoveChecksum) (*MsgRemoveChecksumResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveChecksum not implemented")
-}
-func (*UnimplementedMsgServer) MigrateContract(ctx context.Context, req *MsgMigrateContract) (*MsgMigrateContractResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MigrateContract not implemented")
+func (*UnimplementedMsgServer) UpdateWasmCodeId(ctx context.Context, req *MsgUpdateWasmCodeId) (*MsgUpdateWasmCodeIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateWasmCodeId not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_StoreCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgStoreCode)
+func _Msg_PushNewWasmCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgPushNewWasmCode)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).StoreCode(ctx, in)
+		return srv.(MsgServer).PushNewWasmCode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ibc.lightclients.wasm.v1.Msg/StoreCode",
+		FullMethod: "/ibc.lightclients.wasm.v1.Msg/PushNewWasmCode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).StoreCode(ctx, req.(*MsgStoreCode))
+		return srv.(MsgServer).PushNewWasmCode(ctx, req.(*MsgPushNewWasmCode))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_RemoveChecksum_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgRemoveChecksum)
+func _Msg_UpdateWasmCodeId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateWasmCodeId)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).RemoveChecksum(ctx, in)
+		return srv.(MsgServer).UpdateWasmCodeId(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ibc.lightclients.wasm.v1.Msg/RemoveChecksum",
+		FullMethod: "/ibc.lightclients.wasm.v1.Msg/UpdateWasmCodeId",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).RemoveChecksum(ctx, req.(*MsgRemoveChecksum))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Msg_MigrateContract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgMigrateContract)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).MigrateContract(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/ibc.lightclients.wasm.v1.Msg/MigrateContract",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).MigrateContract(ctx, req.(*MsgMigrateContract))
+		return srv.(MsgServer).UpdateWasmCodeId(ctx, req.(*MsgUpdateWasmCodeId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -516,23 +382,19 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "StoreCode",
-			Handler:    _Msg_StoreCode_Handler,
+			MethodName: "PushNewWasmCode",
+			Handler:    _Msg_PushNewWasmCode_Handler,
 		},
 		{
-			MethodName: "RemoveChecksum",
-			Handler:    _Msg_RemoveChecksum_Handler,
-		},
-		{
-			MethodName: "MigrateContract",
-			Handler:    _Msg_MigrateContract_Handler,
+			MethodName: "UpdateWasmCodeId",
+			Handler:    _Msg_UpdateWasmCodeId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "ibc/lightclients/wasm/v1/tx.proto",
 }
 
-func (m *MsgStoreCode) Marshal() (dAtA []byte, err error) {
+func (m *MsgPushNewWasmCode) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -542,20 +404,20 @@ func (m *MsgStoreCode) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgStoreCode) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgPushNewWasmCode) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgStoreCode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgPushNewWasmCode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.WasmByteCode) > 0 {
-		i -= len(m.WasmByteCode)
-		copy(dAtA[i:], m.WasmByteCode)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.WasmByteCode)))
+	if len(m.Code) > 0 {
+		i -= len(m.Code)
+		copy(dAtA[i:], m.Code)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Code)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -569,7 +431,7 @@ func (m *MsgStoreCode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgStoreCodeResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgPushNewWasmCodeResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -579,27 +441,27 @@ func (m *MsgStoreCodeResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgStoreCodeResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgPushNewWasmCodeResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgStoreCodeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgPushNewWasmCodeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Checksum) > 0 {
-		i -= len(m.Checksum)
-		copy(dAtA[i:], m.Checksum)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Checksum)))
+	if len(m.CodeId) > 0 {
+		i -= len(m.CodeId)
+		copy(dAtA[i:], m.CodeId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.CodeId)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgRemoveChecksum) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateWasmCodeId) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -609,87 +471,20 @@ func (m *MsgRemoveChecksum) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgRemoveChecksum) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateWasmCodeId) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgRemoveChecksum) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateWasmCodeId) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Checksum) > 0 {
-		i -= len(m.Checksum)
-		copy(dAtA[i:], m.Checksum)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Checksum)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Signer) > 0 {
-		i -= len(m.Signer)
-		copy(dAtA[i:], m.Signer)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Signer)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgRemoveChecksumResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgRemoveChecksumResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgRemoveChecksumResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgMigrateContract) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgMigrateContract) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgMigrateContract) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Msg) > 0 {
-		i -= len(m.Msg)
-		copy(dAtA[i:], m.Msg)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Msg)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.Checksum) > 0 {
-		i -= len(m.Checksum)
-		copy(dAtA[i:], m.Checksum)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Checksum)))
+	if len(m.CodeId) > 0 {
+		i -= len(m.CodeId)
+		copy(dAtA[i:], m.CodeId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.CodeId)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -710,7 +505,7 @@ func (m *MsgMigrateContract) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgMigrateContractResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateWasmCodeIdResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -720,16 +515,30 @@ func (m *MsgMigrateContractResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgMigrateContractResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateWasmCodeIdResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgMigrateContractResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateWasmCodeIdResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if len(m.CodeId) > 0 {
+		i -= len(m.CodeId)
+		copy(dAtA[i:], m.CodeId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.CodeId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ClientId) > 0 {
+		i -= len(m.ClientId)
+		copy(dAtA[i:], m.ClientId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ClientId)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -744,7 +553,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgStoreCode) Size() (n int) {
+func (m *MsgPushNewWasmCode) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -754,53 +563,27 @@ func (m *MsgStoreCode) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.WasmByteCode)
+	l = len(m.Code)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
-func (m *MsgStoreCodeResponse) Size() (n int) {
+func (m *MsgPushNewWasmCodeResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Checksum)
+	l = len(m.CodeId)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
-func (m *MsgRemoveChecksum) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Signer)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	l = len(m.Checksum)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgRemoveChecksumResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *MsgMigrateContract) Size() (n int) {
+func (m *MsgUpdateWasmCodeId) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -814,23 +597,27 @@ func (m *MsgMigrateContract) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.Checksum)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	l = len(m.Msg)
+	l = len(m.CodeId)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
-func (m *MsgMigrateContractResponse) Size() (n int) {
+func (m *MsgUpdateWasmCodeIdResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	l = len(m.ClientId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.CodeId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
 	return n
 }
 
@@ -840,7 +627,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgStoreCode) Unmarshal(dAtA []byte) error {
+func (m *MsgPushNewWasmCode) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -863,10 +650,10 @@ func (m *MsgStoreCode) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgStoreCode: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgPushNewWasmCode: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgStoreCode: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgPushNewWasmCode: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -903,7 +690,7 @@ func (m *MsgStoreCode) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WasmByteCode", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -930,9 +717,9 @@ func (m *MsgStoreCode) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.WasmByteCode = append(m.WasmByteCode[:0], dAtA[iNdEx:postIndex]...)
-			if m.WasmByteCode == nil {
-				m.WasmByteCode = []byte{}
+			m.Code = append(m.Code[:0], dAtA[iNdEx:postIndex]...)
+			if m.Code == nil {
+				m.Code = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -956,7 +743,7 @@ func (m *MsgStoreCode) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgStoreCodeResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgPushNewWasmCodeResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -979,15 +766,15 @@ func (m *MsgStoreCodeResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgStoreCodeResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgPushNewWasmCodeResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgStoreCodeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgPushNewWasmCodeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checksum", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CodeId", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1014,9 +801,9 @@ func (m *MsgStoreCodeResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Checksum = append(m.Checksum[:0], dAtA[iNdEx:postIndex]...)
-			if m.Checksum == nil {
-				m.Checksum = []byte{}
+			m.CodeId = append(m.CodeId[:0], dAtA[iNdEx:postIndex]...)
+			if m.CodeId == nil {
+				m.CodeId = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -1040,7 +827,7 @@ func (m *MsgStoreCodeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgRemoveChecksum) Unmarshal(dAtA []byte) error {
+func (m *MsgUpdateWasmCodeId) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1063,176 +850,10 @@ func (m *MsgRemoveChecksum) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgRemoveChecksum: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgUpdateWasmCodeId: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgRemoveChecksum: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Signer", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Signer = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checksum", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Checksum = append(m.Checksum[:0], dAtA[iNdEx:postIndex]...)
-			if m.Checksum == nil {
-				m.Checksum = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgRemoveChecksumResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgRemoveChecksumResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgRemoveChecksumResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgMigrateContract) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgMigrateContract: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgMigrateContract: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgUpdateWasmCodeId: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1301,7 +922,7 @@ func (m *MsgMigrateContract) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Checksum", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CodeId", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1328,43 +949,9 @@ func (m *MsgMigrateContract) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Checksum = append(m.Checksum[:0], dAtA[iNdEx:postIndex]...)
-			if m.Checksum == nil {
-				m.Checksum = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Msg = append(m.Msg[:0], dAtA[iNdEx:postIndex]...)
-			if m.Msg == nil {
-				m.Msg = []byte{}
+			m.CodeId = append(m.CodeId[:0], dAtA[iNdEx:postIndex]...)
+			if m.CodeId == nil {
+				m.CodeId = []byte{}
 			}
 			iNdEx = postIndex
 		default:
@@ -1388,7 +975,7 @@ func (m *MsgMigrateContract) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgMigrateContractResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgUpdateWasmCodeIdResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1411,12 +998,78 @@ func (m *MsgMigrateContractResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgMigrateContractResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgUpdateWasmCodeIdResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgMigrateContractResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgUpdateWasmCodeIdResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CodeId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CodeId = append(m.CodeId[:0], dAtA[iNdEx:postIndex]...)
+			if m.CodeId == nil {
+				m.CodeId = []byte{}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

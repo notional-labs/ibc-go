@@ -2,75 +2,88 @@ package keeper
 
 import (
 	"context"
-	"encoding/hex"
-
 	errorsmod "cosmossdk.io/errors"
-
+	"encoding/hex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
-var _ types.MsgServer = (*Keeper)(nil)
+var _ types.MsgServer = Keeper{}
 
-// StoreCode defines a rpc handler method for MsgStoreCode
-func (k Keeper) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*types.MsgStoreCodeResponse, error) {
-	if k.GetAuthority() != msg.Signer {
-		return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
-	}
-
+// PushNewWasmCode defines a rpc handler method for MsgPushNewWasmCode
+func (k Keeper) PushNewWasmCode(goCtx context.Context, msg *types.MsgPushNewWasmCode) (*types.MsgPushNewWasmCodeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	checksum, err := k.storeWasmCode(ctx, msg.WasmByteCode, ibcwasm.GetVM().StoreCode)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to store wasm bytecode")
+
+	if k.authority != msg.Signer {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
 	}
 
-	emitStoreWasmCodeEvent(ctx, checksum)
+	codeID, err := k.storeWasmCode(ctx, msg.Code, types.WasmVM.StoreCode)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "pushing new wasm code failed")
+	}
 
-	return &types.MsgStoreCodeResponse{
-		Checksum: checksum,
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypePushWasmCode,
+			sdk.NewAttribute(types.AttributeKeyWasmCodeID, hex.EncodeToString(codeID)),
+		),
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, clienttypes.AttributeValueCategory),
+		),
+	})
+
+	return &types.MsgPushNewWasmCodeResponse{
+		CodeId: codeID,
 	}, nil
 }
 
-// RemoveChecksum defines a rpc handler method for MsgRemoveChecksum
-func (k Keeper) RemoveChecksum(goCtx context.Context, msg *types.MsgRemoveChecksum) (*types.MsgRemoveChecksumResponse, error) {
-	if k.GetAuthority() != msg.Signer {
-		return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
-	}
-
-	if !types.HasChecksum(goCtx, msg.Checksum) {
-		return nil, types.ErrWasmChecksumNotFound
-	}
-
-	err := ibcwasm.Checksums.Remove(goCtx, msg.Checksum)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to remove checksum")
-	}
-
-	// unpin the code from the vm in-memory cache
-	if err := ibcwasm.GetVM().Unpin(msg.Checksum); err != nil {
-		return nil, errorsmod.Wrapf(err, "failed to unpin contract with checksum (%s) from vm cache", hex.EncodeToString(msg.Checksum))
-	}
-
-	return &types.MsgRemoveChecksumResponse{}, nil
-}
-
-// MigrateContract defines a rpc handler method for MsgMigrateContract
-func (k Keeper) MigrateContract(goCtx context.Context, msg *types.MsgMigrateContract) (*types.MsgMigrateContractResponse, error) {
-	if k.GetAuthority() != msg.Signer {
-		return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
+// UpdateWasmCodeId defines a rpc handler method for MsgUpdateWasmCodeId
+func (k Keeper) UpdateWasmCodeId(goCtx context.Context, msg *types.MsgUpdateWasmCodeId) (*types.MsgUpdateWasmCodeIdResponse, error) {
+	if k.authority != msg.Signer {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	codeId := msg.CodeId
 
-	err := k.migrateContractCode(ctx, msg.ClientId, msg.Checksum, msg.Msg)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to migrate contract")
+	codeIDKey := types.CodeID(codeId)
+	if !types.HasChecksum(ctx, codeIDKey) {
+		return nil, errorsmod.Wrapf(types.ErrInvalidCodeId, "code id %s does not exist", hex.EncodeToString(codeId))
 	}
 
-	// event emission is handled in migrateContractCode
+	clientId := msg.ClientId
+	unknownClientState, found := k.clientKeeper.GetClientState(ctx, clientId)
+	if !found {
+		return nil, errorsmod.Wrapf(clienttypes.ErrClientNotFound, "cannot update client with ID %s", clientId)
+	}
 
-	return &types.MsgMigrateContractResponse{}, nil
+	clientState, ok := unknownClientState.(*types.ClientState)
+	if !ok {
+		return nil, errorsmod.Wrapf(types.ErrInvalid, "client state type %T, expected %T", unknownClientState, (*types.ClientState)(nil))
+	}
+
+	clientState.CodeId = codeId
+
+	k.clientKeeper.SetClientState(ctx, clientId, clientState)
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeUpdateWasmCodeId,
+			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientId),
+			sdk.NewAttribute(types.AttributeKeyWasmCodeID, hex.EncodeToString(codeId)),
+		),
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, clienttypes.AttributeValueCategory),
+		),
+	})
+
+	return &types.MsgUpdateWasmCodeIdResponse{
+		ClientId: clientId,
+		CodeId:   codeId,
+	}, nil
 }
