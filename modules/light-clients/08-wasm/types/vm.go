@@ -88,7 +88,7 @@ func initContract(codeID []byte, ctx sdk.Context, store storetypes.KVStore, payl
 	}
 
 	ctx.GasMeter().ConsumeGas(VMGasRegister.NewContractInstanceCosts(len(encodedData)), "Loading CosmWasm module: instantiate")
-	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, encodedData, NewStoreAdapter(store), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, encodedData, NewStoreAdapter(store), wasmvmAPI, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return response, err
 }
