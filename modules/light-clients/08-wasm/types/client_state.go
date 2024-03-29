@@ -128,7 +128,13 @@ func (cs ClientState) Initialize(context sdk.Context, marshaler codec.BinaryCode
 	setClientState(clientStore, marshaler, &cs)
 	setConsensusState(clientStore, marshaler, consensusState, cs.GetLatestHeight())
 
-	_, err := initContract(cs.CodeId, context, clientStore)
+	payload := InstantiateMessage{
+		ClientState:    cs.Data,
+		ConsensusState: consensusState.Data,
+		Checksum:       cs.CodeId,
+	}
+
+	_, err := initContract(cs.CodeId, context, clientStore, payload)
 	if err != nil {
 		return errorsmod.Wrapf(ErrUnableToInit, "err: %s", err)
 	}

@@ -1,7 +1,9 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+	"encoding/json"
 	"errors"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
@@ -50,7 +52,7 @@ func (r contractResult) Error() string {
 }
 
 // Calls vm.Init with appropriate arguments
-func initContract(codeID []byte, ctx sdk.Context, store storetypes.KVStore) (*wasmvmtypes.Response, error) {
+func initContract(codeID []byte, ctx sdk.Context, store storetypes.KVStore, payload InstantiateMessage) (*wasmvmtypes.Response, error) {
 	sdkGasMeter := ctx.GasMeter()
 	multipliedGasMeter := NewMultipliedGasMeter(sdkGasMeter, VMGasRegister)
 	gasLimit := VMGasRegister.runtimeGasForContract(ctx)
@@ -75,14 +77,18 @@ func initContract(codeID []byte, ctx sdk.Context, store storetypes.KVStore) (*wa
 		},
 	}
 
+	encodedData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to marshal payload for wasm contract instantiation")
+	}
+
 	msgInfo := wasmvmtypes.MessageInfo{
 		Sender: "",
 		Funds:  nil,
 	}
 
-	initMsg := []byte("{}")
-	ctx.GasMeter().ConsumeGas(VMGasRegister.NewContractInstanceCosts(len(initMsg)), "Loading CosmWasm module: instantiate")
-	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, initMsg, NewStoreAdapter(store), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
+	ctx.GasMeter().ConsumeGas(VMGasRegister.NewContractInstanceCosts(len(encodedData)), "Loading CosmWasm module: instantiate")
+	response, gasUsed, err := WasmVM.Instantiate(codeID, env, msgInfo, encodedData, NewStoreAdapter(store), cosmwasm.GoAPI{}, nil, multipliedGasMeter, gasLimit, costJSONDeserialization)
 	VMGasRegister.consumeRuntimeGas(ctx, gasUsed)
 	return response, err
 }
