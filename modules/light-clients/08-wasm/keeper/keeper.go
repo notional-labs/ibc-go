@@ -3,10 +3,11 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"cosmossdk.io/collections"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
-	clientkeeper "github.com/cosmos/ibc-go/v7/modules/core/02-client/keeper"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
+	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	"math"
 	"path/filepath"
 	"strings"
@@ -14,26 +15,28 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	storetypes "cosmossdk.io/core/store"
+	errorsmod "cosmossdk.io/errors"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 
-	"github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
 type Keeper struct {
-	storeKey     storetypes.StoreKey
+	storeKey     storetypes.KVStoreService
 	cdc          codec.BinaryCodec
-	wasmVM       *cosmwasm.VM
+	wasmVM       ibcwasm.WasmEngine
 	authority    string
 	clientKeeper *clientkeeper.Keeper
 }
 
-func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, authority string, homeDir string, clientKeeper *clientkeeper.Keeper) Keeper {
+func NewKeeper(cdc codec.BinaryCodec,
+	key storetypes.KVStoreService, authority string,
+	homeDir string, clientKeeper *clientkeeper.Keeper, queryRouter ibcwasm.QueryRouter,
+) Keeper {
 	// Wasm VM
 	wasmDataDir := filepath.Join(homeDir, "wasm_client_data")
 	wasmSupportedFeatures := strings.Join([]string{"storage", "iterator"}, ",")
@@ -46,6 +49,9 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, authority string,
 		panic(err)
 	}
 	types.WasmVM = vm
+	ibcwasm.SetQueryPlugins(types.NewDefaultQueryPlugins())
+	ibcwasm.SetQueryRouter(queryRouter)
+	ibcwasm.SetupWasmStoreService(key)
 
 	// governance authority
 
@@ -58,37 +64,54 @@ func NewKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, authority string,
 	}
 }
 
-func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
-	store := ctx.KVStore(k.storeKey)
+func NewKeeperWithVm(cdc codec.BinaryCodec,
+	key storetypes.KVStoreService, authority string,
+	homeDir string, clientKeeper *clientkeeper.Keeper, queryRouter ibcwasm.QueryRouter,
+	vm ibcwasm.WasmEngine,
+) Keeper {
+	types.WasmVM = vm
+	ibcwasm.SetQueryPlugins(types.NewDefaultQueryPlugins())
+	ibcwasm.SetQueryRouter(queryRouter)
+	ibcwasm.SetupWasmStoreService(key)
 
+	// governance authority
+
+	return Keeper{
+		cdc:          cdc,
+		storeKey:     key,
+		wasmVM:       vm,
+		authority:    authority,
+		clientKeeper: clientKeeper,
+	}
+}
+
+func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte, storeFn func(code cosmwasm.WasmCode) (cosmwasm.Checksum, error)) ([]byte, error) {
 	var err error
 	if IsGzip(code) {
 		ctx.GasMeter().ConsumeGas(types.VMGasRegister.UncompressCosts(len(code)), "Uncompress gzip bytecode")
 		code, err = Uncompress(code, uint64(types.MaxWasmSize))
 		if err != nil {
-			return nil, sdkerrors.Wrap(types.ErrCreateFailed, err.Error())
+			return nil, errorsmod.Wrap(types.ErrCreateFailed, err.Error())
 		}
 	}
 
 	// Check to see if the store has a code with the same code it
 	codeHash := generateWasmCodeHash(code)
 	codeIDKey := types.CodeID(codeHash)
-	if store.Has(codeIDKey) {
+	if types.HasChecksum(ctx, codeIDKey) {
 		return nil, types.ErrWasmCodeExists
 	}
 
 	// run the code through the wasm light client validation process
-	if isValidWasmCode, err := types.ValidateWasmCode(code); err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrWasmCodeValidation, "unable to validate wasm code: %s", err)
-	} else if !isValidWasmCode {
-		return nil, types.ErrWasmInvalidCode
+	if err := types.ValidateWasmCode(code); err != nil {
+		return nil, errorsmod.Wrap(err, "wasm bytecode validation failed")
 	}
 
 	// create the code in the vm
 	ctx.GasMeter().ConsumeGas(types.VMGasRegister.CompileCosts(len(code)), "Compiling wasm bytecode")
-	codeID, err := types.WasmVM.Create(code)
+	codeID, err := storeFn(code)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrWasmInvalidCode, "unable to compile wasm code: %s", err)
+		return nil, errorsmod.Wrapf(types.ErrWasmInvalidCode, "unable to compile wasm code: %s", err)
 	}
 
 	// safety check to assert that code id returned by WasmVM equals to code hash
@@ -96,29 +119,14 @@ func (k Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
 		return nil, types.ErrWasmInvalidCodeID
 	}
 
-	store.Set(codeIDKey, code)
+	// pin the code to the vm in-memory cache
+	if err := types.WasmVM.Pin(codeID); err != nil {
+		return nil, errorsmod.Wrapf(err, "failed to pin contract with checksum (%s) to vm cache", hex.EncodeToString(codeID))
+	}
+
+	err = ibcwasm.Checksums.Set(ctx, codeHash)
+
 	return codeID, nil
-}
-
-func (k Keeper) importWasmCode(ctx sdk.Context, codeHash, wasmCode []byte) error {
-	store := ctx.KVStore(k.storeKey)
-	if IsGzip(wasmCode) {
-		var err error
-		wasmCode, err = Uncompress(wasmCode, uint64(types.MaxWasmSize))
-		if err != nil {
-			return sdkerrors.Wrap(types.ErrCreateFailed, err.Error())
-		}
-	}
-	newCodeHash, err := k.wasmVM.Create(wasmCode)
-	if err != nil {
-		return sdkerrors.Wrap(types.ErrCreateFailed, err.Error())
-	}
-	if !bytes.Equal(codeHash, types.CodeID(newCodeHash)) {
-		return sdkerrors.Wrap(types.ErrInvalid, "code hashes not same")
-	}
-
-	store.Set(codeHash, wasmCode)
-	return nil
 }
 
 func generateWasmCodeHash(code []byte) []byte {
@@ -132,19 +140,22 @@ func (k Keeper) getWasmCode(c context.Context, query *types.WasmCodeQuery) (*typ
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	store := ctx.KVStore(k.storeKey)
-
 	codeID, err := hex.DecodeString(query.CodeId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid code id")
 	}
 
+	// Only return checksums we previously stored, not arbitrary checksums that might be stored via e.g Wasmd.
+	if !types.HasChecksum(ctx, codeID) {
+		return nil, status.Error(codes.NotFound, errorsmod.Wrap(types.ErrWasmChecksumNotFound, query.CodeId).Error())
+	}
+
 	codeKey := types.CodeID(codeID)
-	code := store.Get(codeKey)
-	if code == nil {
+	code, err := types.WasmVM.GetCode(codeKey)
+	if err != nil {
 		return nil, status.Error(
 			codes.NotFound,
-			sdkerrors.Wrap(types.ErrWasmCodeIDNotFound, query.CodeId).Error(),
+			errorsmod.Wrap(types.ErrWasmCodeIDNotFound, query.CodeId).Error(),
 		)
 	}
 
@@ -154,35 +165,26 @@ func (k Keeper) getWasmCode(c context.Context, query *types.WasmCodeQuery) (*typ
 }
 
 func (k Keeper) getAllWasmCodeID(c context.Context, query *types.AllWasmCodeIDQuery) (*types.AllWasmCodeIDResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-
-	var allCode []string
-
-	store := ctx.KVStore(k.storeKey)
-	prefixStore := prefix.NewStore(store, types.PrefixCodeIDKey)
-
-	iter := prefixStore.Iterator(nil, nil)
-	defer iter.Close()
-
-	pageRes, err := sdkquery.FilteredPaginate(prefixStore, query.Pagination, func(key []byte, _ []byte, accumulate bool) (bool, error) {
-		if accumulate {
-			allCode = append(allCode, string(key))
-		}
-		return true, nil
-	})
+	checksums, pageRes, err := sdkquery.CollectionPaginate(
+		c,
+		ibcwasm.Checksums,
+		query.Pagination,
+		func(key []byte, value collections.NoValue) (string, error) {
+			return hex.EncodeToString(key), nil
+		})
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.AllWasmCodeIDResponse{
-		CodeIds:    allCode,
+		CodeIds:    checksums,
 		Pagination: pageRes,
 	}, nil
 }
 
 func (k Keeper) InitGenesis(ctx sdk.Context, gs types.GenesisState) error {
 	for _, contract := range gs.Contracts {
-		err := k.importWasmCode(ctx, contract.CodeHash, contract.ContractCode)
+		_, err := k.storeWasmCode(ctx, contract.ContractCode, types.WasmVM.StoreCodeUnchecked)
 		if err != nil {
 			return err
 		}
@@ -191,45 +193,38 @@ func (k Keeper) InitGenesis(ctx sdk.Context, gs types.GenesisState) error {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.PrefixCodeIDKey)
-	defer iterator.Close()
+	checksums, err := types.GetAllChecksums(ctx)
+	if err != nil {
+		panic(err)
+	}
 
+	// Grab code from wasmVM and add to genesis state.
 	var genesisState types.GenesisState
-	for ; iterator.Valid(); iterator.Next() {
+	for _, checksum := range checksums {
+		code, err := types.WasmVM.GetCode(checksum)
+		if err != nil {
+			panic(err)
+		}
 		genesisState.Contracts = append(genesisState.Contracts, types.GenesisContract{
-			CodeHash:     iterator.Key(),
-			ContractCode: iterator.Value(),
+			CodeHash:     checksum,
+			ContractCode: code,
 		})
 	}
+
 	return genesisState
 }
 
-// TODO: testing
-func (k Keeper) IterateCodeInfos(ctx sdk.Context, fn func(codeID string) (stop bool)) {
-	store := ctx.KVStore(k.storeKey)
-	prefixStore := prefix.NewStore(store, []byte(fmt.Sprintf("%s/", types.PrefixCodeIDKey)))
+// InitializePinnedCodes updates wasmvm to pin to cache all contracts marked as pinned
+func InitializePinnedCodes(ctx sdk.Context) error {
+	checksums, err := types.GetAllChecksums(ctx)
+	if err != nil {
+		return err
+	}
 
-	iter := prefixStore.Iterator(nil, nil)
-	defer iter.Close()
-
-	for ; iter.Valid(); iter.Next() {
-		if fn(string(iter.Value())) {
-			break
+	for _, checksum := range checksums {
+		if err := types.WasmVM.Pin(checksum); err != nil {
+			return err
 		}
 	}
-}
-
-// TODO: testing
-func (k Keeper) GetWasmByte(ctx sdk.Context, codeID string) ([]byte, error) {
-	store := ctx.KVStore(k.storeKey)
-
-	byteCodeID, err := hex.DecodeString(codeID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid code ID")
-	}
-
-	codeKey := types.CodeID(byteCodeID)
-	wasmBytes := store.Get(codeKey)
-	return wasmBytes, nil
+	return nil
 }

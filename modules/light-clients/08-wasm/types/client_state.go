@@ -1,17 +1,17 @@
 package types
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"encoding/json"
 	"errors"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ibcerrors "github.com/cosmos/ibc-go/v7/internal/errors"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ exported.ClientState = (*ClientState)(nil)
@@ -27,7 +27,7 @@ func NewClientState(data []byte, codeID []byte, height clienttypes.Height) *Clie
 
 // ClientType is wasm.
 func (cs ClientState) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 // GetLatestHeight returns latest block height.
@@ -38,11 +38,23 @@ func (cs ClientState) GetLatestHeight() exported.Height {
 // Validate performs a basic validation of the client state fields.
 func (cs ClientState) Validate() error {
 	if len(cs.Data) == 0 {
-		return sdkerrors.Wrap(ErrInvalidData, "data cannot be empty")
+		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
 	}
 
-	if len(cs.CodeId) == 0 {
-		return sdkerrors.Wrap(ErrInvalidCodeId, "code ID cannot be empty")
+	if err := ValidateWasmChecksum(cs.CodeId); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateBasic performs a basic validation of the client state fields.
+func (cs ClientState) ValidateBasic() error {
+	if len(cs.Data) == 0 {
+		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
+	}
+
+	if err := ValidateWasmChecksum(cs.CodeId); err != nil {
+		return err
 	}
 
 	return nil
@@ -64,7 +76,11 @@ type (
 //
 // A frozen client will become expired, so the Frozen status
 // has higher precedence.
-func (cs ClientState) Status(ctx sdk.Context, clientStore sdk.KVStore, _ codec.BinaryCodec) exported.Status {
+func (cs ClientState) Status(ctx sdk.Context, clientStore storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+	// Return unauthorized if the checksum hasn't been previously stored via storeWasmCode.
+	if !HasChecksum(ctx, cs.CodeId) {
+		return exported.Unauthorized
+	}
 	status := exported.Unknown
 	payload := statusPayload{Status: statusPayloadInner{}}
 
@@ -93,32 +109,38 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 
 func (c ClientState) GetTimestampAtHeight(
 	_ sdk.Context,
-	clientStore sdk.KVStore,
+	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
 ) (uint64, error) {
 	// get consensus state at height from clientStore to check for expiry
 	consState, found := GetConsensusState(clientStore, cdc, height)
 	if found != nil {
-		return 0, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "height (%s)", height)
+		return 0, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "height (%s)", height)
 	}
 	return consState.GetTimestamp(), nil
 }
 
 // Initialize checks that the initial consensus state is an 08-wasm consensus state and
 // sets the client state, consensus state in the provided client store.
-func (cs ClientState) Initialize(context sdk.Context, marshaler codec.BinaryCodec, clientStore sdk.KVStore, state exported.ConsensusState) error {
+func (cs ClientState) Initialize(context sdk.Context, marshaler codec.BinaryCodec, clientStore storetypes.KVStore, state exported.ConsensusState) error {
 	consensusState, ok := state.(*ConsensusState)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidConsensus, "invalid initial consensus state. expected type: %T, got: %T",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "invalid initial consensus state. expected type: %T, got: %T",
 			&ConsensusState{}, state)
 	}
 	setClientState(clientStore, marshaler, &cs)
 	setConsensusState(clientStore, marshaler, consensusState, cs.GetLatestHeight())
 
-	_, err := initContract(cs.CodeId, context, clientStore)
+	payload := InstantiateMessage{
+		ClientState:    cs.Data,
+		ConsensusState: consensusState.Data,
+		Checksum:       cs.CodeId,
+	}
+
+	_, err := initContract(cs.CodeId, context, clientStore, payload)
 	if err != nil {
-		return sdkerrors.Wrapf(ErrUnableToInit, "err: %s", err)
+		return errorsmod.Wrapf(ErrUnableToInit, "err: %s", err)
 	}
 	return nil
 }
@@ -142,7 +164,7 @@ type (
 // If a zero proof height is passed in, it will fail to retrieve the associated consensus state.
 func (cs ClientState) VerifyMembership(
 	ctx sdk.Context,
-	clientStore sdk.KVStore,
+	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
 	delayTimePeriod uint64,
@@ -197,7 +219,7 @@ type (
 
 func (cs ClientState) VerifyNonMembership(
 	ctx sdk.Context,
-	clientStore sdk.KVStore,
+	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
 	delayTimePeriod uint64,
@@ -236,21 +258,21 @@ func (cs ClientState) VerifyNonMembership(
 }
 
 // / Calls the contract with the given payload and writes the result to `output`
-func call[T ContractResult](payload any, cs *ClientState, ctx sdk.Context, clientStore sdk.KVStore) (T, error) {
+func call[T ContractResult](payload any, cs *ClientState, ctx sdk.Context, clientStore storetypes.KVStore) (T, error) {
 	var output T
 	encodedData, err := json.Marshal(payload)
 	if err != nil {
-		return output, sdkerrors.Wrapf(ErrUnableToMarshalPayload, "err: %s", err)
+		return output, errorsmod.Wrapf(ErrUnableToMarshalPayload, "err: %s", err)
 	}
 	out, err := callContract(cs.CodeId, ctx, clientStore, encodedData)
 	if err != nil {
-		return output, sdkerrors.Wrapf(ErrUnableToCall, "err: %s", err)
+		return output, errorsmod.Wrapf(ErrUnableToCall, "err: %s", err)
 	}
 	if err := json.Unmarshal(out.Data, &output); err != nil {
-		return output, sdkerrors.Wrapf(ErrUnableToUnmarshalPayload, "err: %s", err)
+		return output, errorsmod.Wrapf(ErrUnableToUnmarshalPayload, "err: %s", err)
 	}
 	if !output.Validate() {
-		return output, sdkerrors.Wrapf(errors.New(output.Error()), "error occurred while calling contract with code ID %s", cs.CodeId)
+		return output, errorsmod.Wrapf(errors.New(output.Error()), "error occurred while calling contract with code ID %s", cs.CodeId)
 	}
 	return output, nil
 }

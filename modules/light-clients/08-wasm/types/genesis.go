@@ -1,12 +1,14 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"encoding/json"
 	"time"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type ExportMetadataPayload struct {
@@ -16,7 +18,7 @@ type ExportMetadataPayload struct {
 type ExportMetadataInnerPayload struct{}
 
 // ExportMetadata is a no-op since wasm client does not store any metadata in client store
-func (c ClientState) ExportMetadata(store sdk.KVStore) []exported.GenesisMetadata {
+func (c ClientState) ExportMetadata(store storetypes.KVStore) []exported.GenesisMetadata {
 	payload := ExportMetadataPayload{}
 
 	encodedData, err := json.Marshal(payload)
@@ -41,4 +43,16 @@ func (c ClientState) ExportMetadata(store sdk.KVStore) []exported.GenesisMetadat
 	}
 
 	return genesisMetadata
+}
+
+// Validate performs basic genesis state validation returning an error upon any
+// failure.
+func (gs GenesisState) Validate() error {
+	for _, contract := range gs.Contracts {
+		if err := ValidateWasmCode(contract.ContractCode); err != nil {
+			return errorsmod.Wrap(err, "wasm bytecode validation failed")
+		}
+	}
+
+	return nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 
-	types "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	types "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
 // GetQueryCmd returns the query commands for IBC channels

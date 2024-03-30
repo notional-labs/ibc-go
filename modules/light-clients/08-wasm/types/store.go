@@ -2,31 +2,32 @@ package types
 
 import (
 	"bytes"
+	"context"
+	errorsmod "cosmossdk.io/errors"
+	wasmvm "github.com/CosmWasm/wasmvm"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	"io"
 
+	"cosmossdk.io/store/cachekv"
+	"cosmossdk.io/store/tracekv"
+	storetypes "cosmossdk.io/store/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // WrappedStore combines two KVStores into one while transparently routing the calls based on key prefix
 type WrappedStore struct {
-	first  sdk.KVStore
-	second sdk.KVStore
+	first  storetypes.KVStore
+	second storetypes.KVStore
 
 	firstPrefix  []byte
 	secondPrefix []byte
 }
 
-func NewWrappedStore(first, second sdk.KVStore, firstPrefix, secondPrefix []byte) WrappedStore {
+func NewWrappedStore(first, second storetypes.KVStore, firstPrefix, secondPrefix []byte) WrappedStore {
 	return WrappedStore{
 		first:        first,
 		second:       second,
@@ -55,11 +56,11 @@ func (ws WrappedStore) GetStoreType() storetypes.StoreType {
 	return ws.first.GetStoreType()
 }
 
-func (ws WrappedStore) Iterator(start, end []byte) sdk.Iterator {
+func (ws WrappedStore) Iterator(start, end []byte) storetypes.Iterator {
 	return ws.getStore(start).Iterator(ws.trimPrefix(start), ws.trimPrefix(end))
 }
 
-func (ws WrappedStore) ReverseIterator(start, end []byte) sdk.Iterator {
+func (ws WrappedStore) ReverseIterator(start, end []byte) storetypes.Iterator {
 	return ws.getStore(start).ReverseIterator(ws.trimPrefix(start), ws.trimPrefix(end))
 }
 
@@ -69,10 +70,6 @@ func (ws WrappedStore) CacheWrap() storetypes.CacheWrap {
 
 func (ws WrappedStore) CacheWrapWithTrace(w io.Writer, tc storetypes.TraceContext) storetypes.CacheWrap {
 	return cachekv.NewStore(tracekv.NewStore(ws, w, tc))
-}
-
-func (ws WrappedStore) CacheWrapWithListeners(storeKey storetypes.StoreKey, listeners []storetypes.WriteListener) storetypes.CacheWrap {
-	return cachekv.NewStore(listenkv.NewStore(ws, storeKey, listeners))
 }
 
 func (ws WrappedStore) trimPrefix(key []byte) []byte {
@@ -85,7 +82,7 @@ func (ws WrappedStore) trimPrefix(key []byte) []byte {
 	return key
 }
 
-func (ws WrappedStore) getStore(key []byte) sdk.KVStore {
+func (ws WrappedStore) getStore(key []byte) storetypes.KVStore {
 	if bytes.HasPrefix(key, ws.firstPrefix) {
 		return ws.first
 	}
@@ -94,14 +91,14 @@ func (ws WrappedStore) getStore(key []byte) sdk.KVStore {
 }
 
 // setClientState stores the client state
-func setClientState(clientStore sdk.KVStore, cdc codec.BinaryCodec, clientState *ClientState) {
+func setClientState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, clientState *ClientState) {
 	key := host.ClientStateKey()
 	val := clienttypes.MustMarshalClientState(cdc, clientState)
 	clientStore.Set(key, val)
 }
 
 // setConsensusState stores the consensus state at the given height.
-func setConsensusState(clientStore sdk.KVStore, cdc codec.BinaryCodec, consensusState *ConsensusState, height exported.Height) {
+func setConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, consensusState *ConsensusState, height exported.Height) {
 	key := host.ConsensusStateKey(height)
 	val := clienttypes.MustMarshalConsensusState(cdc, consensusState)
 	clientStore.Set(key, val)
@@ -109,10 +106,10 @@ func setConsensusState(clientStore sdk.KVStore, cdc codec.BinaryCodec, consensus
 
 // GetConsensusState retrieves the consensus state from the client prefixed
 // store. An error is returned if the consensus state does not exist.
-func GetConsensusState(store sdk.KVStore, cdc codec.BinaryCodec, height exported.Height) (*ConsensusState, error) {
+func GetConsensusState(store storetypes.KVStore, cdc codec.BinaryCodec, height exported.Height) (*ConsensusState, error) {
 	bz := store.Get(host.ConsensusStateKey(height))
 	if bz == nil {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			clienttypes.ErrConsensusStateNotFound,
 			"consensus state does not exist for height %s", height,
 		)
@@ -120,12 +117,12 @@ func GetConsensusState(store sdk.KVStore, cdc codec.BinaryCodec, height exported
 
 	consensusStateI, err := clienttypes.UnmarshalConsensusState(cdc, bz)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(clienttypes.ErrInvalidConsensus, "unmarshal error: %v", err)
+		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "unmarshal error: %v", err)
 	}
 
 	consensusState, ok := consensusStateI.(*ConsensusState)
 	if !ok {
-		return nil, sdkerrors.Wrapf(
+		return nil, errorsmod.Wrapf(
 			clienttypes.ErrInvalidConsensus,
 			"invalid consensus type %T, expected %T", consensusState, &ConsensusState{},
 		)
@@ -138,11 +135,11 @@ var _ wasmvmtypes.KVStore = &StoreAdapter{}
 
 // StoreAdapter adapter to bridge SDK store impl to wasmvm
 type StoreAdapter struct {
-	parent sdk.KVStore
+	parent storetypes.KVStore
 }
 
 // NewStoreAdapter constructor
-func NewStoreAdapter(s sdk.KVStore) *StoreAdapter {
+func NewStoreAdapter(s storetypes.KVStore) *StoreAdapter {
 	if s == nil {
 		panic("store must not be nil")
 	}
@@ -167,4 +164,48 @@ func (s StoreAdapter) Iterator(start, end []byte) wasmvmtypes.Iterator {
 
 func (s StoreAdapter) ReverseIterator(start, end []byte) wasmvmtypes.Iterator {
 	return s.parent.ReverseIterator(start, end)
+}
+
+// Checksum is a type alias used for wasm byte code checksums.
+type Checksum = wasmvmtypes.Checksum
+
+// CreateChecksum creates a sha256 checksum from the given wasm code, it forwards the
+// call to the wasmvm package. The code is checked for the following conditions:
+// - code length is zero.
+// - code length is less than 4 bytes (magic number length).
+// - code does not start with the wasm magic number.
+func CreateChecksum(code []byte) (Checksum, error) {
+	return wasmvm.CreateChecksum(code)
+}
+
+// GetAllChecksums is a helper to get all checksums from the store.
+// It returns an empty slice if no checksums are found
+func GetAllChecksums(ctx context.Context) ([]Checksum, error) {
+	iterator, err := ibcwasm.Checksums.Iterate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	keys, err := iterator.Keys()
+	if err != nil {
+		return nil, err
+	}
+
+	checksums := []Checksum{}
+	for _, key := range keys {
+		checksums = append(checksums, key)
+	}
+
+	return checksums, nil
+}
+
+// HasChecksum returns true if the given checksum exists in the store and
+// false otherwise.
+func HasChecksum(ctx context.Context, checksum Checksum) bool {
+	found, err := ibcwasm.Checksums.Has(ctx, checksum)
+	if err != nil {
+		return false
+	}
+
+	return found
 }

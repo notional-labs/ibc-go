@@ -1,12 +1,13 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type checkSubstituteAndUpdateStatePayload struct {
@@ -17,7 +18,7 @@ type CheckSubstituteAndUpdateStatePayload struct{}
 
 func (c ClientState) CheckSubstituteAndUpdateState(
 	ctx sdk.Context, _ codec.BinaryCodec, subjectClientStore,
-	substituteClientStore sdk.KVStore, substituteClient exported.ClientState,
+	substituteClientStore storetypes.KVStore, substituteClient exported.ClientState,
 ) error {
 	var (
 		SubjectPrefix    = []byte("subject/")
@@ -26,7 +27,7 @@ func (c ClientState) CheckSubstituteAndUpdateState(
 
 	_, ok := substituteClient.(*ClientState)
 	if !ok {
-		return sdkerrors.Wrapf(
+		return errorsmod.Wrapf(
 			ErrUnableToCall,
 			fmt.Sprintf("substitute client state, expected type %T, got %T", &ClientState{}, substituteClient),
 		)

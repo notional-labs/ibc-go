@@ -1,31 +1,31 @@
 package types
 
 import (
-	"fmt"
-
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ exported.ConsensusState = (*ConsensusState)(nil)
 
 func (m ConsensusState) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 func (m ConsensusState) GetTimestamp() uint64 {
-	return m.Timestamp
+	return 0
 }
 
 func (m ConsensusState) ValidateBasic() error {
-	if m.Timestamp == 0 {
-		return sdkerrors.Wrap(clienttypes.ErrInvalidConsensus, "timestamp cannot be zero Unix time")
-	}
-
-	if m.Data == nil || len(m.Data) == 0 {
-		return fmt.Errorf("data cannot be empty")
+	if len(m.Data) == 0 {
+		return errorsmod.Wrap(ErrInvalidData, "data cannot be empty")
 	}
 
 	return nil
+}
+
+// NewConsensusState creates a new ConsensusState instance.
+func NewConsensusState(data []byte) *ConsensusState {
+	return &ConsensusState{
+		Data: data,
+	}
 }

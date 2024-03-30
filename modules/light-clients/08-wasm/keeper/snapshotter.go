@@ -1,14 +1,15 @@
 package keeper
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"io"
 
 	errorsmod "cosmossdk.io/errors"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	snapshot "github.com/cosmos/cosmos-sdk/snapshots/types"
+	snapshot "cosmossdk.io/store/snapshots/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
 var _ snapshot.ExtensionSnapshotter = &WasmSnapshotter{}
@@ -18,10 +19,10 @@ const SnapshotFormat = 1
 
 type WasmSnapshotter struct {
 	wasm *Keeper
-	cms  sdk.MultiStore
+	cms  storetypes.MultiStore
 }
 
-func NewWasmSnapshotter(cms sdk.MultiStore, wasm *Keeper) *WasmSnapshotter {
+func NewWasmSnapshotter(cms storetypes.MultiStore, wasm *Keeper) *WasmSnapshotter {
 	return &WasmSnapshotter{
 		wasm: wasm,
 		cms:  cms,
@@ -48,38 +49,29 @@ func (ws *WasmSnapshotter) SnapshotExtension(height uint64, payloadWriter snapsh
 	}
 
 	ctx := sdk.NewContext(cacheMS, tmproto.Header{}, false, nil)
-	seenBefore := make(map[string]bool)
-	var rerr error
 
-	ws.wasm.IterateCodeInfos(ctx, func(codeID string) bool {
-		if seenBefore[codeID] {
-			return false
-		}
-		seenBefore[codeID] = true
+	checkSums, err := types.GetAllChecksums(ctx)
+	if err != nil {
+		return err
+	}
 
-		// load code and abort on error
-		wasmBytes, err := ws.wasm.GetWasmByte(ctx, codeID)
+	for _, checksum := range checkSums {
+		wasmCode, err := types.WasmVM.GetCode(checksum)
 		if err != nil {
-			rerr = err
-			return true
+			return err
 		}
 
-		compressedWasm, err := types.GzipIt(wasmBytes)
+		compressedWasm, err := types.GzipIt(wasmCode)
 		if err != nil {
-			rerr = err
-			return true
+			return err
 		}
 
-		err = payloadWriter(compressedWasm)
-		if err != nil {
-			rerr = err
-			return true
+		if err = payloadWriter(compressedWasm); err != nil {
+			return err
 		}
+	}
 
-		return false
-	})
-
-	return rerr
+	return nil
 }
 
 func (ws *WasmSnapshotter) RestoreExtension(height uint64, format uint32, payloadReader snapshot.ExtensionPayloadReader) error {
