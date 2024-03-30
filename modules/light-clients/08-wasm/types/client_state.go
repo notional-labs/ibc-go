@@ -77,6 +77,10 @@ type (
 // A frozen client will become expired, so the Frozen status
 // has higher precedence.
 func (cs ClientState) Status(ctx sdk.Context, clientStore storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+	// Return unauthorized if the checksum hasn't been previously stored via storeWasmCode.
+	if !HasChecksum(ctx, cs.CodeId) {
+		return exported.Unauthorized
+	}
 	status := exported.Unknown
 	payload := statusPayload{Status: statusPayloadInner{}}
 
