@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"context"
+	errorsmod "cosmossdk.io/errors"
 	"encoding/hex"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
 
 var _ types.MsgServer = Keeper{}
@@ -17,18 +17,18 @@ func (k Keeper) PushNewWasmCode(goCtx context.Context, msg *types.MsgPushNewWasm
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if k.authority != msg.Signer {
-		return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
 	}
 
-	codeID, err := k.storeWasmCode(ctx, msg.Code)
+	codeID, err := k.storeWasmCode(ctx, msg.Code, types.WasmVM.StoreCode)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "pushing new wasm code failed")
+		return nil, errorsmod.Wrap(err, "pushing new wasm code failed")
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			clienttypes.EventTypePushWasmCode,
-			sdk.NewAttribute(clienttypes.AttributeKeyWasmCodeID, hex.EncodeToString(codeID)),
+			types.EventTypePushWasmCode,
+			sdk.NewAttribute(types.AttributeKeyWasmCodeID, hex.EncodeToString(codeID)),
 		),
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
@@ -44,26 +44,26 @@ func (k Keeper) PushNewWasmCode(goCtx context.Context, msg *types.MsgPushNewWasm
 // UpdateWasmCodeId defines a rpc handler method for MsgUpdateWasmCodeId
 func (k Keeper) UpdateWasmCodeId(goCtx context.Context, msg *types.MsgUpdateWasmCodeId) (*types.MsgUpdateWasmCodeIdResponse, error) {
 	if k.authority != msg.Signer {
-		return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority: expected %s, got %s", k.authority, msg.Signer)
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	store := ctx.KVStore(k.storeKey)
-
 	codeId := msg.CodeId
-	if !store.Has(types.CodeID(codeId)) {
-		return nil, sdkerrors.Wrapf(types.ErrInvalidCodeId, "code id %s does not exist", hex.EncodeToString(codeId))
+
+	codeIDKey := types.CodeID(codeId)
+	if !types.HasChecksum(ctx, codeIDKey) {
+		return nil, errorsmod.Wrapf(types.ErrInvalidCodeId, "code id %s does not exist", hex.EncodeToString(codeId))
 	}
 
 	clientId := msg.ClientId
 	unknownClientState, found := k.clientKeeper.GetClientState(ctx, clientId)
 	if !found {
-		return nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound, "cannot update client with ID %s", clientId)
+		return nil, errorsmod.Wrapf(clienttypes.ErrClientNotFound, "cannot update client with ID %s", clientId)
 	}
 
 	clientState, ok := unknownClientState.(*types.ClientState)
 	if !ok {
-		return nil, sdkerrors.Wrapf(types.ErrInvalid, "client state type %T, expected %T", unknownClientState, (*types.ClientState)(nil))
+		return nil, errorsmod.Wrapf(types.ErrInvalid, "client state type %T, expected %T", unknownClientState, (*types.ClientState)(nil))
 	}
 
 	clientState.CodeId = codeId
@@ -72,9 +72,9 @@ func (k Keeper) UpdateWasmCodeId(goCtx context.Context, msg *types.MsgUpdateWasm
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			clienttypes.EventTypeUpdateWasmCodeId,
+			types.EventTypeUpdateWasmCodeId,
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientId),
-			sdk.NewAttribute(clienttypes.AttributeKeyWasmCodeID, hex.EncodeToString(codeId)),
+			sdk.NewAttribute(types.AttributeKeyWasmCodeID, hex.EncodeToString(codeId)),
 		),
 		sdk.NewEvent(
 			sdk.EventTypeMessage,

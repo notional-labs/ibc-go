@@ -1,12 +1,13 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type verifyUpgradeAndUpdateStatePayload struct {
@@ -25,7 +26,7 @@ type verifyUpgradeAndUpdateStateMsgPayload struct {
 func (c ClientState) VerifyUpgradeAndUpdateState(
 	ctx sdk.Context,
 	cdc codec.BinaryCodec,
-	store sdk.KVStore,
+	store storetypes.KVStore,
 	newClient exported.ClientState,
 	newConsState exported.ConsensusState,
 	proofUpgradeClient,
@@ -33,13 +34,13 @@ func (c ClientState) VerifyUpgradeAndUpdateState(
 ) error {
 	wasmUpgradeClientState, ok := newClient.(*ClientState)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "upgraded client state must be wasm light client state. expected %T, got: %T",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidClient, "upgraded client state must be wasm light client state. expected %T, got: %T",
 			&ClientState{}, wasmUpgradeClientState)
 	}
 
 	wasmUpgradeConsState, ok := newConsState.(*ConsensusState)
 	if !ok {
-		return sdkerrors.Wrapf(clienttypes.ErrInvalidConsensus, "upgraded consensus state must be wasm light consensus state. expected %T, got: %T",
+		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "upgraded consensus state must be wasm light consensus state. expected %T, got: %T",
 			&ConsensusState{}, wasmUpgradeConsState)
 	}
 
@@ -47,7 +48,7 @@ func (c ClientState) VerifyUpgradeAndUpdateState(
 	lastHeight := c.LatestHeight
 	_, err := GetConsensusState(store, cdc, lastHeight)
 	if err != nil {
-		return sdkerrors.Wrap(err, "could not retrieve consensus state for lastHeight")
+		return errorsmod.Wrap(err, "could not retrieve consensus state for lastHeight")
 	}
 
 	payload := verifyUpgradeAndUpdateStatePayload{

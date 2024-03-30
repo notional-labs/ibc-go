@@ -3,12 +3,11 @@ package cli
 import (
 	"context"
 	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ func getCmdCode() *cobra.Command {
 		Short: "Query wasm code",
 		Long:  "Query wasm code",
 		Example: fmt.Sprintf(
-			"%s query %s %s code [code-id]", version.AppName, host.SubModuleName, types.ModuleName,
+			"%s query %s code [code-id]", version.AppName, ibcexported.ModuleName,
 		),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +54,7 @@ func getAllWasmCode() *cobra.Command {
 		Short: "Query all wasm code",
 		Long:  "Query all wasm code",
 		Example: fmt.Sprintf(
-			"%s query %s all-wasm-code", version.AppName, types.ModuleName,
+			"%s query %s all-wasm-code", version.AppName, ibcexported.ModuleName,
 		),
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {

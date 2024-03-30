@@ -1,9 +1,10 @@
 package types
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type checkForMisbehaviourPayload struct {
@@ -13,7 +14,7 @@ type checkForMisbehaviourInnerPayload struct {
 	ClientMessage clientMessageConcretePayloadClientMessage `json:"client_message"`
 }
 
-func (c ClientState) CheckForMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore sdk.KVStore, msg exported.ClientMessage) bool {
+func (c ClientState) CheckForMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, msg exported.ClientMessage) bool {
 	clientMsgConcrete := clientMessageConcretePayloadClientMessage{
 		Header:       nil,
 		Misbehaviour: nil,

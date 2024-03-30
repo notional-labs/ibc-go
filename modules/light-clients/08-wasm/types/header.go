@@ -3,13 +3,13 @@ package types
 import (
 	"fmt"
 
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ exported.ClientMessage = &Header{}
 
 func (m Header) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 func (m Header) ValidateBasic() error {

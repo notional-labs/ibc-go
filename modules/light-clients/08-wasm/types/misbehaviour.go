@@ -3,13 +3,13 @@ package types
 import (
 	"fmt"
 
-	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ exported.ClientMessage = &Misbehaviour{}
 
 func (m Misbehaviour) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 func (m Misbehaviour) ValidateBasic() error {

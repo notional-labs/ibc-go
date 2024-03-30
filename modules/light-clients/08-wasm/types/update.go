@@ -1,11 +1,12 @@
 package types
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ exported.ClientState = (*ClientState)(nil)
@@ -26,7 +27,7 @@ type verifyClientMessageInnerPayload struct {
 // It must handle each type of ClientMessage appropriately. Calls to CheckForMisbehaviour, UpdateState, and UpdateStateOnMisbehaviour
 // will assume that the content of the ClientMessage has been verified and can be trusted. An error should be returned
 // if the ClientMessage fails to verify.
-func (c ClientState) VerifyClientMessage(ctx sdk.Context, _ codec.BinaryCodec, clientStore sdk.KVStore, clientMsg exported.ClientMessage) error {
+func (c ClientState) VerifyClientMessage(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) error {
 	clientMsgConcrete := clientMessageConcretePayloadClientMessage{
 		Header:       nil,
 		Misbehaviour: nil,
@@ -60,12 +61,12 @@ type clientMessageConcretePayload struct {
 }
 
 // Client state and new consensus states are updated in the store by the contract
-func (c ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, store sdk.KVStore, clientMsg exported.ClientMessage) []exported.Height {
+func (c ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, store storetypes.KVStore, clientMsg exported.ClientMessage) []exported.Height {
 	header, ok := clientMsg.(*Header)
 	if !ok {
 		panic(fmt.Errorf("expected type %T, got %T", &Header{}, clientMsg))
 	}
-	
+
 	payload := updateStatePayload{
 		UpdateState: updateStateInnerPayload{
 			ClientMessage: clientMessageConcretePayload{
@@ -91,7 +92,7 @@ type updateStateOnMisbehaviourInnerPayload struct {
 
 // UpdateStateOnMisbehaviour should perform appropriate state changes on a client state given that misbehaviour has been detected and verified
 // Client state is updated in the store by contract
-func (c ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore sdk.KVStore, clientMsg exported.ClientMessage) {
+func (c ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) {
 	clientMsgConcrete := clientMessageConcretePayloadClientMessage{
 		Header:       nil,
 		Misbehaviour: nil,
