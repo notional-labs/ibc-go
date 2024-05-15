@@ -2,9 +2,7 @@ go 1.21
 
 module github.com/cosmos/ibc-go/v8
 
-retract (
-	[v8.0.0, v8.1.1] // contains ASA-2024-007 vulnerability
-)
+retract [v8.0.0, v8.1.1] // contains ASA-2024-007 vulnerability
 
 require (
 	cosmossdk.io/api v0.7.3
@@ -30,7 +28,7 @@ require (
 	github.com/cosmos/ics23/go v0.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/hashicorp/go-metrics v0.5.1
+	github.com/hashicorp/go-metrics v0.5.2
 	github.com/spf13/cast v1.6.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
@@ -183,7 +181,7 @@ require (
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/net v0.21.0 // indirect
