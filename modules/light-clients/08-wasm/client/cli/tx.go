@@ -96,13 +96,27 @@ func newMigrateContractCmd() *cobra.Command {
 				return err
 			}
 
+			proposal, err := govcli.ReadGovPropFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			authority, _ := cmd.Flags().GetString(FlagAuthority)
+			if authority != "" {
+				if _, err = sdk.AccAddressFromBech32(authority); err != nil {
+					return fmt.Errorf("invalid authority address: %w", err)
+				}
+			} else {
+				authority = sdk.AccAddress(address.Module(govtypes.ModuleName)).String()
+			}
+
 			clientID := args[0]
 			checksum := args[1]
 			migrateMsg := args[2]
 
 			// Construct the message
 			msg := &types.MsgMigrateContract{
-				Signer:   clientCtx.GetFromAddress().String(),
+				Signer:   authority,
 				ClientId: clientID,
 				Checksum: []byte(checksum),
 				Msg:      []byte(migrateMsg),
@@ -112,11 +126,22 @@ func newMigrateContractCmd() *cobra.Command {
 				return err
 			}
 
-			// Generate or broadcast the transaction
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			if err := proposal.SetMsgs([]sdk.Msg{msg}); err != nil {
+				return fmt.Errorf("failed to create a migrate contract proposal message: %w", err)
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
 		},
 	}
 
+	cmd.Flags().String(FlagAuthority, "", "The address of the wasm client module authority (defaults to gov)")
 	flags.AddTxFlagsToCmd(cmd)
+	govcli.AddGovPropFlagsToCmd(cmd)
+
+	err := cmd.MarkFlagRequired(govcli.FlagTitle)
+	if err != nil {
+		panic(err)
+	}
+
 	return cmd
 }
