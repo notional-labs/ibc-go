@@ -2,6 +2,7 @@ package types_test
 
 import (
 	"crypto/rand"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -74,6 +75,7 @@ func TestValidateWasmChecksum(t *testing.T) {
 			"success",
 			func() {
 				hash, err := types.CreateChecksum(wasmtesting.Code)
+				fmt.Println("hash: ", hash)
 				require.NoError(t, err, t.Name())
 				checksum = hash
 			},
