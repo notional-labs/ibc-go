@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -12,7 +13,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/version"
-	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	types "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
@@ -21,7 +21,7 @@ import (
 
 const FlagAuthority = "authority"
 
-// newSubmitStoreCodeProposalCmd returns the command to send a proposal to store new wasm bytecode.
+// newSubmitStoreCodeProposalCmd returns a message to store wasm bytes code
 func newSubmitStoreCodeProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "store-code [path/to/wasm-file]",
@@ -35,18 +35,13 @@ func newSubmitStoreCodeProposalCmd() *cobra.Command {
 				return err
 			}
 
-			proposal, err := govcli.ReadGovPropFlags(clientCtx, cmd.Flags())
-			if err != nil {
-				return err
-			}
-
 			authority, _ := cmd.Flags().GetString(FlagAuthority)
-			if authority != "" {
+			if authority == "" {
+				authority = sdk.AccAddress(address.Module(govtypes.ModuleName)).String()
+			} else {
 				if _, err = sdk.AccAddressFromBech32(authority); err != nil {
 					return fmt.Errorf("invalid authority address: %w", err)
 				}
-			} else {
-				authority = sdk.AccAddress(address.Module(govtypes.ModuleName)).String()
 			}
 
 			code, err := os.ReadFile(args[0])
@@ -63,22 +58,13 @@ func newSubmitStoreCodeProposalCmd() *cobra.Command {
 				return err
 			}
 
-			if err := proposal.SetMsgs([]sdk.Msg{msg}); err != nil {
-				return fmt.Errorf("failed to create a store code proposal message: %w", err)
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
+			// Create a transaction from the message
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
 
 	cmd.Flags().String(FlagAuthority, "", "The address of the wasm client module authority (defaults to gov)")
-
 	flags.AddTxFlagsToCmd(cmd)
-	govcli.AddGovPropFlagsToCmd(cmd)
-	err := cmd.MarkFlagRequired(govcli.FlagTitle)
-	if err != nil {
-		panic(err)
-	}
 
 	return cmd
 }
@@ -97,8 +83,13 @@ func newMigrateContractCmd() *cobra.Command {
 			}
 
 			clientID := args[0]
-			checksum := args[1]
+			checksumHex := args[1]
 			migrateMsg := args[2]
+
+			checksum, err := hex.DecodeString(checksumHex)
+			if err != nil {
+				return fmt.Errorf("invalid checksum format: %w", err)
+			}
 
 			// Construct the message
 			msg := &types.MsgMigrateContract{
