@@ -35,7 +35,7 @@ func NewTxCmd() *cobra.Command {
 	}
 
 	txCmd.AddCommand(
-		newSubmitStoreCodeProposalCmd(),
+		newStoreCodeCmd(),
 		newMigrateContractCmd(),
 	)
 

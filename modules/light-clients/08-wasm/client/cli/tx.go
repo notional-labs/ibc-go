@@ -10,23 +10,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/version"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	types "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
-const FlagAuthority = "authority"
-
-// newSubmitStoreCodeProposalCmd returns a message to store wasm bytes code
-func newSubmitStoreCodeProposalCmd() *cobra.Command {
+// newStoreCodeCmd returns a message to store wasm bytes code
+func newStoreCodeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "store-code [path/to/wasm-file]",
-		Short:   "Reads wasm code from the file and creates a proposal to store the wasm code",
-		Long:    "Reads wasm code from the file and creates a proposal to store the wasm code",
+		Short:   "Reads wasm code from the file and push wasm code to chain",
+		Long:    "Reads wasm code from the file and push wasm code to chain",
 		Example: fmt.Sprintf("%s tx %s-wasm store-code [path/to/wasm_file]", version.AppName, ibcexported.ModuleName),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,22 +30,13 @@ func newSubmitStoreCodeProposalCmd() *cobra.Command {
 				return err
 			}
 
-			authority, _ := cmd.Flags().GetString(FlagAuthority)
-			if authority == "" {
-				authority = sdk.AccAddress(address.Module(govtypes.ModuleName)).String()
-			} else {
-				if _, err = sdk.AccAddressFromBech32(authority); err != nil {
-					return fmt.Errorf("invalid authority address: %w", err)
-				}
-			}
-
 			code, err := os.ReadFile(args[0])
 			if err != nil {
 				return err
 			}
 
 			msg := &types.MsgStoreCode{
-				Signer:       authority,
+				Signer:       clientCtx.GetFromAddress().String(),
 				WasmByteCode: code,
 			}
 
@@ -63,9 +49,7 @@ func newSubmitStoreCodeProposalCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(FlagAuthority, "", "The address of the wasm client module authority (defaults to gov)")
 	flags.AddTxFlagsToCmd(cmd)
-
 	return cmd
 }
 
